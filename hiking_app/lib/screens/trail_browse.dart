@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hiking_app/models/route.dart';
 import 'package:hiking_app/widgets/trail_card.dart';
 
 class TrailBrowserScreen extends StatefulWidget {
@@ -9,11 +10,24 @@ class TrailBrowserScreen extends StatefulWidget {
 }
 
 class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
+  // temp trail for trail card creater
   @override
   Widget build(BuildContext context) {
+    TrailRoute campSiteRoute = TrailRoute(
+      'Camp site loop',
+      'assets/route_files/park route .gpx',
+      'Rostrevor',
+      Duration(hours: 2, minutes: 3, seconds: 2),
+      12,
+      'easy',
+      'A walk around a camp site.',
+      ['assets/images/pexels-ivanlodo-2961929.jpg'],
+      [],
+    );
+
     return Scaffold(
       backgroundColor: Color.fromRGBO(241, 244, 248, 1),
-    
+
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -59,9 +73,8 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
           ),
           // Spacer box
           SizedBox(height: 15),
-          // Trail cards 
-          TrailCard(trailName: 'Camp site loop', location: 'Rostrevor', description: 'A walk around a camp site.', imagePath: 'assets/images/pexels-ivanlodo-2961929.jpg'),
-          
+          // Trail cards
+          TrailCard(trailRoute: campSiteRoute,),
         ],
       ),
     );

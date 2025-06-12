@@ -1,18 +1,12 @@
 // lib/widgets/trails_card.dart
 import 'package:flutter/material.dart';
+import 'package:hiking_app/models/route.dart';
 
 class TrailCard extends StatelessWidget {
-  final String trailName;
-  final String location;
-  final String description;
-  final String imagePath;
-
+  final TrailRoute trailRoute;
+  
   const TrailCard({
-    super.key,
-    required this.trailName,
-    required this.location,
-    required this.description,
-    required this.imagePath,
+    required this.trailRoute,
   });
 
   @override
@@ -30,10 +24,11 @@ class TrailCard extends StatelessWidget {
           margin: EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
+              // trail image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  imagePath,
+                  trailRoute.images.first,
                   width: 150, // fixed width for the image
                   height: 150,
                   fit: BoxFit.cover,
@@ -44,22 +39,25 @@ class TrailCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // trail name text
                     Text(
-                      trailName,
+                      trailRoute.name,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    //location text
                     Text(
-                      location,
+                      trailRoute.location,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.normal,
                       ),
                     ),
                     SizedBox(height: 8),
-                    Text(description),
+                    // trail description
+                    Text(trailRoute.description),
                   ],
                 ),
               ),
