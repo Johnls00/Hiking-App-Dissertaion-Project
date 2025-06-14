@@ -5,7 +5,7 @@ import 'package:hiking_app/models/route.dart';
 class TrailCard extends StatelessWidget {
   final TrailRoute trailRoute;
   
-  const TrailCard({
+  const TrailCard({super.key, 
     required this.trailRoute,
   });
 
