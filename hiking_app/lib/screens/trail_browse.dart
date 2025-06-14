@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:gpx/gpx.dart';
 import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/models/waypoint.dart';
+import 'package:hiking_app/utilities/gpx_file_util.dart';
 import 'package:hiking_app/widgets/trail_card.dart';
 
 class TrailBrowserScreen extends StatefulWidget {
@@ -10,21 +13,37 @@ class TrailBrowserScreen extends StatefulWidget {
 }
 
 class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
-  // temp trail for trail card creater
+  TrailRoute? campSiteRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    loadTrail();
+  }
+
+  void loadTrail() async {
+    Gpx gpxFile = await GpxFileUtil.readGpxFile('assets/park_route.gpx');
+    List<Waypoint> waypoints = GpxFileUtil.mapWaypoints(gpxFile);
+
+    print(waypoints);
+    setState(() {
+      campSiteRoute = TrailRoute(
+        'Camp site loop',
+        'assets/park_route.gpx',
+        'Rostrevor',
+        Duration(hours: 2, minutes: 3, seconds: 2),
+        12,
+        'easy',
+        'A walk around a camp site.',
+        ['assets/images/pexels-ivanlodo-2961929.jpg'],
+        waypoints,
+      );
+      print(campSiteRoute?.name);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    TrailRoute campSiteRoute = TrailRoute(
-      'Camp site loop',
-      'assets/route_files/park route .gpx',
-      'Rostrevor',
-      Duration(hours: 2, minutes: 3, seconds: 2),
-      12,
-      'easy',
-      'A walk around a camp site.',
-      ['assets/images/pexels-ivanlodo-2961929.jpg'],
-      [],
-    );
-
     return Scaffold(
       backgroundColor: Color.fromRGBO(241, 244, 248, 1),
 
@@ -73,8 +92,11 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
           ),
           // Spacer box
           SizedBox(height: 15),
+
           // Trail cards
-          TrailCard(trailRoute: campSiteRoute,),
+          campSiteRoute != null
+              ? TrailCard(trailRoute: campSiteRoute!)
+              : const CircularProgressIndicator(),
         ],
       ),
     );
