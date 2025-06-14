@@ -1,6 +1,7 @@
 // lib/widgets/trails_card.dart
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/screens/trail_view.dart';
 
 class TrailCard extends StatelessWidget {
   final TrailRoute trailRoute;
@@ -15,7 +16,11 @@ class TrailCard extends StatelessWidget {
       width: double.infinity,
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, '/trail_view');
+          Navigator.pushNamed(
+            context,
+            '/trail_view',
+            arguments: trailRoute,
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Card(

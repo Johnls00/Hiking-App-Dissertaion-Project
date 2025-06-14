@@ -113,8 +113,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         minWidth: double.infinity,
                         onPressed: () {
                           bool auth = _checkEmail();
-                          print("email: $savedEmail");
-                          print("password: $savedPassword");
                           if (auth) {
                             Navigator.pushNamed(context, '/home');
                           } else {

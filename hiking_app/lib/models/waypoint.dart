@@ -11,4 +11,12 @@ class Waypoint {
     required this.lon,
     required this.ele,
   });
+
+  String returnCoordinates() {
+    return '$lat,$lon,$ele';
+  }
+
+  String returnName(){
+    return name;
+  }
 }
