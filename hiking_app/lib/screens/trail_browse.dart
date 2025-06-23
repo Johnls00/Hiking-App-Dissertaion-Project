@@ -32,7 +32,7 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
         'assets/park_route.gpx',
         'Rostrevor',
         Duration(hours: 2, minutes: 3, seconds: 2),
-        12,
+        GpxFileUtil.calculateTotalDistance(gpxFile),
         'easy',
         'A walk around a camp site.',
         ['assets/images/pexels-ivanlodo-2961929.jpg'],

@@ -47,6 +47,7 @@ class TrailCard extends StatelessWidget {
               SizedBox(height: 8),
               // trail description
               Text(trailRoute.description),
+              Text(trailRoute.distance.toStringAsFixed(2)),
             ],
           ),
         ),
