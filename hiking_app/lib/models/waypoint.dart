@@ -2,8 +2,8 @@
 class Waypoint {
   final String name;
   // implement later
-  final String waypointDescription = "description of the waypoint blah blah"; 
-  final double distanceFromStart = 0.00;
+  final String description; 
+  final double distanceFromStart;
   final String image = "";
   final double lat;
   final double lon;
@@ -11,10 +11,12 @@ class Waypoint {
 
   Waypoint({
     required this.name,
+    String? description,
+    required this.distanceFromStart,
     required this.lat,
     required this.lon,
     required this.ele,
-  });
+  }) : description = description ?? 'No description provided';
 
   
 

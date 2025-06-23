@@ -168,7 +168,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                 children: [
                   SizedBox(width: 10),
                   Text(
-                    trailRoute.waypoints[waypointIndex].waypointDescription,
+                    trailRoute.waypoints[waypointIndex].description,
                     style: TextStyle(fontSize: 13),
                   ),
                 ],

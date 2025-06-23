@@ -20,11 +20,24 @@ class GpxFileUtil {
       double? lon = wpt.lon;
       double? lat = wpt.lat;
       double? ele = wpt.ele;
+      double? distanceFromStart = calculateWaypointDistance(gpxFile, wpt);
       String? waypointName = wpt.name;
+      String? description = wpt.desc;
 
-      if (lon != null && lat != null && ele != null && waypointName != null) {
+      if (lon != null &&
+          lat != null &&
+          ele != null &&
+          waypointName != null &&
+          description != null) {
         mappedWaypoints.add(
-          Waypoint(name: waypointName, lat: lat, lon: lon, ele: ele),
+          Waypoint(
+            name: waypointName,
+            description: description,
+            distanceFromStart: distanceFromStart,
+            lat: lat,
+            lon: lon,
+            ele: ele,
+          ),
         );
       }
     }
@@ -32,7 +45,7 @@ class GpxFileUtil {
     return mappedWaypoints;
   }
 
-  // method to calculate the total distance of a trail in meters 
+  // method to calculate the total distance of a trail in meters
   static double calculateTotalDistance(Gpx gpxFile) {
     final points = gpxFile.trks
         .expand((trk) => trk.trksegs)
@@ -60,5 +73,37 @@ class GpxFileUtil {
   }
 
   // a method to caculate the distance of a waypoint from the start of a trail
+  static double calculateWaypointDistance(Gpx gpxFile, Wpt waypoint) {
+    double waypointDistance = 0.0;
 
+    final points = gpxFile.trks
+        .expand((trk) => trk.trksegs)
+        .expand((seg) => seg.trkpts)
+        .toList();
+
+    for (int i = 0; i < points.length - 1; i++) {
+      double segmentDistance = Geolocator.distanceBetween(
+        points[i].lat!,
+        points[i].lon!,
+        points[i + 1].lat!,
+        points[i + 1].lon!,
+      );
+
+      waypointDistance += segmentDistance;
+
+      // Check if waypoint is closest to this segment
+      double distToCurrent = Geolocator.distanceBetween(
+        points[i].lat!,
+        points[i].lon!,
+        waypoint.lat!,
+        waypoint.lon!,
+      );
+
+      if (distToCurrent < 10) {
+        // 10 meters threshold or your own logic
+        return waypointDistance;
+      }
+    }
+    return waypointDistance;
+  }
 }
