@@ -13,7 +13,7 @@ class TrailCard extends StatelessWidget {
       width: double.infinity,
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, '/trail_view', arguments: trailRoute);
+          Navigator.pushNamed(context, '/trail_waypoints_view', arguments: trailRoute);
         },
         borderRadius: BorderRadius.circular(12),
         child: Card(

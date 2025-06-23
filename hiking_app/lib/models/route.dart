@@ -8,6 +8,7 @@ class TrailRoute {
   String location;
   Duration timeToComplete;
   double distance;
+  double elevation = 0.00;
   String difficulty;
   String description;
   List<String> images;
