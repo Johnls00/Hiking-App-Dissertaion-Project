@@ -1,7 +1,4 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hiking_app/models/route.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
@@ -15,31 +12,33 @@ class TrailWaypointsScreen extends StatefulWidget {
 int waypointIndex = 0;
 
 late MapboxMap mapboxMap;
-PointAnnotationManager? pointAnnotationManager;
+CircleAnnotationManager? circleAnnotationManager;
 
 class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
   void _onMapCreated(MapboxMap controller) async {
     mapboxMap = controller;
 
-    pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
 
-    await pointAnnotationManager?.deleteAll();
+    await circleAnnotationManager?.deleteAll();
 
     final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
     final waypoint = trailRoute.waypoints[waypointIndex];
 
     // Load the image from assets
-    final ByteData bytes = await rootBundle.load('assets/icons/waypoint-marker.png');
-    final Uint8List imageData = bytes.buffer.asUint8List();
+    // final ByteData bytes = await rootBundle.load('assets/icons/waypoint-marker.png');
+    // final Uint8List imageData = bytes.buffer.asUint8List();
 
     // Create a PointAnnotationOptions
-    PointAnnotationOptions pointAnnotationOptions = PointAnnotationOptions(
-      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)), // Example coordinates
-      image: imageData,
-      iconSize: 3.0
+    CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
+      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)), 
+      circleColor: Color(0xFFFF0000).toARGB32(),// Example coordinates
+      circleOpacity: 1,
+      circleRadius: 10,
     );
 
-     pointAnnotationManager?.create(pointAnnotationOptions);
+    circleAnnotationManager?.create(circleAnnotationOptions);
+
   }
 
   @override
@@ -90,6 +89,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                       waypointIndex,
                     ), // rebuilds map when index changes
                     onMapCreated: _onMapCreated,
+                    
                     cameraOptions: CameraOptions(
                       center: Point(
                         coordinates: Position(
@@ -195,7 +195,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
+                  SizedBox(
                     width: 166,
                     height: 42,
                     child: Ink(
