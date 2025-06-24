@@ -1,13 +1,16 @@
 import 'dart:math';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:gpx/gpx.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' hide Position;
 import 'package:hiking_app/models/waypoint.dart';
 
 class GpxFileUtil {
   static Future<Gpx> readGpxFile(String filePath) async {
     String xmlString = await rootBundle.loadString(filePath);
     Gpx gpxFile = GpxReader().fromString(xmlString);
+
+    
 
     return gpxFile;
   }
@@ -20,7 +23,7 @@ class GpxFileUtil {
       double? lon = wpt.lon;
       double? lat = wpt.lat;
       double? ele = wpt.ele;
-      double? distanceFromStart = calculateWaypointDistance(gpxFile, wpt);
+      double? distanceFromStart = calculateDistanceFromStart(gpxFile, wpt);
       String? waypointName = wpt.name;
       String? description = wpt.desc;
 
@@ -43,6 +46,25 @@ class GpxFileUtil {
     }
 
     return mappedWaypoints;
+  }
+
+  // method for mapping track points from gpx file using Position from mapbox_maps_flutter
+  static List<Point> mapTrackpoints(Gpx gpxFile) {
+    List<Point> mappedTrackpoints = [];
+
+    for (var track in gpxFile.trks) {
+      for (var trackseg in track.trksegs) {
+        for (var trackpoint in trackseg.trkpts) {
+          double? lon = trackpoint.lon;
+          double? lat = trackpoint.lat;
+
+          if (lon != null && lat != null) {
+            mappedTrackpoints.add(Point(coordinates: Position(lon, lat)));
+          }
+        }
+      }
+    }
+    return mappedTrackpoints;
   }
 
   // method to calculate the total distance of a trail in meters
@@ -73,8 +95,8 @@ class GpxFileUtil {
   }
 
   // a method to caculate the distance of a waypoint from the start of a trail
-  static double calculateWaypointDistance(Gpx gpxFile, Wpt waypoint) {
-    double waypointDistance = 0.0;
+  static double calculateDistanceFromStart(Gpx gpxFile, point) {
+    double pointDistance = 0.0;
 
     final points = gpxFile.trks
         .expand((trk) => trk.trksegs)
@@ -89,21 +111,21 @@ class GpxFileUtil {
         points[i + 1].lon!,
       );
 
-      waypointDistance += segmentDistance;
+      pointDistance += segmentDistance;
 
       // Check if waypoint is closest to this segment
       double distToCurrent = Geolocator.distanceBetween(
         points[i].lat!,
         points[i].lon!,
-        waypoint.lat!,
-        waypoint.lon!,
+        point.lat!,
+        point.lon!,
       );
 
       if (distToCurrent < 10) {
         // 10 meters threshold or your own logic
-        return waypointDistance;
+        return pointDistance;
       }
     }
-    return waypointDistance;
+    return pointDistance;
   }
 }

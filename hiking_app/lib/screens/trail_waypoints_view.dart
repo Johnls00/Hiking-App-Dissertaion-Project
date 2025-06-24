@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -18,27 +19,48 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
   void _onMapCreated(MapboxMap controller) async {
     mapboxMap = controller;
 
-    circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    circleAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager();
 
     await circleAnnotationManager?.deleteAll();
 
     final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
     final waypoint = trailRoute.waypoints[waypointIndex];
-
     // Load the image from assets
     // final ByteData bytes = await rootBundle.load('assets/icons/waypoint-marker.png');
     // final Uint8List imageData = bytes.buffer.asUint8List();
 
     // Create a PointAnnotationOptions
     CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
-      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)), 
-      circleColor: Color(0xFFFF0000).toARGB32(),// Example coordinates
+      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)),
+      circleColor: Colors.blue.toARGB32(), // Example coordinates
       circleOpacity: 1,
       circleRadius: 10,
     );
 
     circleAnnotationManager?.create(circleAnnotationOptions);
 
+    final lineString = LineString(coordinates: trailRoute.trackpoints.map((p) => p.coordinates).toList(),);
+    final feature = Feature(geometry: lineString, id: "route_line");
+    final featureCollection = FeatureCollection(features: [feature]);
+
+    print(lineString);
+
+    await mapboxMap.style.addSource(
+      GeoJsonSource(id: "line", data: jsonEncode(featureCollection.toJson())),
+    );
+
+    await mapboxMap.style.addLayer(
+      LineLayer(
+        id: "line_layer",
+        sourceId: "line",
+        lineColor: Colors.red.toARGB32(),
+        lineBorderColor: Colors.red.shade900.toARGB32(),
+        lineJoin: LineJoin.ROUND,
+        lineCap: LineCap.ROUND,
+        lineWidth: 6.0,
+      ),
+    );
   }
 
   @override
@@ -89,7 +111,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                       waypointIndex,
                     ), // rebuilds map when index changes
                     onMapCreated: _onMapCreated,
-                    
+
                     cameraOptions: CameraOptions(
                       center: Point(
                         coordinates: Position(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gpx/gpx.dart';
 import 'package:hiking_app/models/route.dart';
-import 'package:hiking_app/models/waypoint.dart';
 import 'package:hiking_app/utilities/gpx_file_util.dart';
 import 'package:hiking_app/widgets/trail_card.dart';
 
@@ -23,22 +22,19 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
 
   void loadTrail() async {
     Gpx gpxFile = await GpxFileUtil.readGpxFile('assets/park_route.gpx');
-    List<Waypoint> waypoints = GpxFileUtil.mapWaypoints(gpxFile);
 
-    print(waypoints);
     setState(() {
       campSiteRoute = TrailRoute(
-        'Camp site loop',
-        'assets/park_route.gpx',
+        gpxFile.metadata!.name.toString(),
         'Rostrevor',
         Duration(hours: 2, minutes: 3, seconds: 2),
         GpxFileUtil.calculateTotalDistance(gpxFile),
         'easy',
-        'A walk around a camp site.',
+        gpxFile.metadata!.desc.toString(),
         ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        waypoints,
+        GpxFileUtil.mapWaypoints(gpxFile),
+        GpxFileUtil.mapTrackpoints(gpxFile),
       );
-      print(campSiteRoute?.name);
     });
   }
 
