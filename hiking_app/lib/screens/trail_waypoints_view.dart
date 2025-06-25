@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class TrailWaypointsScreen extends StatefulWidget {
@@ -76,25 +77,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Page back button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  SizedBox(width: 10),
-                  Ink(
-                    decoration: const ShapeDecoration(
-                      color: Color.fromRGBO(221, 221, 221, 1),
-                      shape: CircleBorder(),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, "/home");
-                      },
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                  ),
-                ],
-              ),
-
+              RoundBackButton(),
               // map widget
               Padding(
                 padding: const EdgeInsets.all(8.0),
