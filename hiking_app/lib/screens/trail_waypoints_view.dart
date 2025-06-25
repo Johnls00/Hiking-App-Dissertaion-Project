@@ -32,7 +32,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
 
     // Create a PointAnnotationOptions
     CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
-      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)),
+      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat) ),
       circleColor: Colors.blue.toARGB32(), // Example coordinates
       circleOpacity: 1,
       circleRadius: 10,
@@ -44,14 +44,13 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
     final feature = Feature(geometry: lineString, id: "route_line");
     final featureCollection = FeatureCollection(features: [feature]);
 
-    print(lineString);
-
     await mapboxMap.style.addSource(
       GeoJsonSource(id: "line", data: jsonEncode(featureCollection.toJson())),
     );
 
     await mapboxMap.style.addLayer(
       LineLayer(
+        slot: "middle",
         id: "line_layer",
         sourceId: "line",
         lineColor: Colors.red.toARGB32(),
