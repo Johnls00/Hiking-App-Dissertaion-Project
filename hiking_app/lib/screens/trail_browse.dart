@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gpx/gpx.dart';
 import 'package:hiking_app/models/route.dart';
 import 'package:hiking_app/utilities/gpx_file_util.dart';
+import 'package:hiking_app/widgets/navigation_bar_bottom_main.dart';
 import 'package:hiking_app/widgets/trail_card.dart';
 
 class TrailBrowserScreen extends StatefulWidget {
@@ -95,6 +96,8 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
               : const CircularProgressIndicator(),
         ],
       ),
+
+      bottomNavigationBar: MainBottomNavigationBar(),
     );
   }
 }
