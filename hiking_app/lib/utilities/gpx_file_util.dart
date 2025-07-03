@@ -10,8 +10,6 @@ class GpxFileUtil {
     String xmlString = await rootBundle.loadString(filePath);
     Gpx gpxFile = GpxReader().fromString(xmlString);
 
-    
-
     return gpxFile;
   }
 
@@ -94,6 +92,18 @@ class GpxFileUtil {
     return totalDistance; // in meters
   }
 
+  // a method to calculate the estimated time to complete trail
+  static Duration calculateWalkingDuration(
+    double distanceMeters,
+    double speedKmPerHour,
+  ) {
+    double speedMetersPerSecond = (speedKmPerHour * 1000) / 3600;
+    double timeInSeconds = distanceMeters / speedMetersPerSecond;
+    return Duration(seconds: timeInSeconds.round());
+  }
+
+  // ((trailRoute.distance) / (5.1 * 1000) * 60.toStringAsFixed(2),
+
   // a method to caculate the distance of a waypoint from the start of a trail
   static double calculateDistanceFromStart(Gpx gpxFile, point) {
     double pointDistance = 0.0;
@@ -128,4 +138,28 @@ class GpxFileUtil {
     }
     return pointDistance;
   }
+
+  // a method which calculates the elevation gain of a trail
+  static double calculateElevationGain(Gpx gpxFile) {
+  final points = gpxFile.trks
+      .expand((trk) => trk.trksegs)
+      .expand((seg) => seg.trkpts)
+      .toList();
+
+  double elevationGain = 0.0;
+
+  for (int i = 0; i < points.length - 1; i++) {
+    final currentEle = points[i].ele;
+    final nextEle = points[i + 1].ele;
+
+    if (currentEle != null && nextEle != null) {
+      double diff = nextEle - currentEle;
+      if (diff > 0) {
+        elevationGain += diff;
+      }
+    }
+  }
+
+  return elevationGain; // in meters
+}
 }
