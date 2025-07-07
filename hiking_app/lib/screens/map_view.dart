@@ -32,7 +32,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   Future<void> _onMapCreated(MapboxMap controller) async {
     mapboxMapController = controller;
-    // mapboxMapController.loadStyleURI('mapbox://styles/mapbox/outdoors-v12');
+    await mapboxMapController.loadStyleURI(MapboxStyles.OUTDOORS);
 
     // Enable scale bar
     await mapboxMapController.scaleBar.updateSettings(
