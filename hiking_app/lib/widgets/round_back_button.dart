@@ -9,17 +9,26 @@ class RoundBackButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         SizedBox(width: 10),
-        Ink(
-          decoration: const ShapeDecoration(
-            color: Color.fromRGBO(221, 221, 221, 1),
-            shape: CircleBorder(),
-          ),
-          child: IconButton(
-            onPressed: () {
-              print("Popping back to: ${ModalRoute.of(context)?.settings.name}"); 
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () {
+              print(
+                "Popping back to: ${ModalRoute.of(context)?.settings.name}",
+              );
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back),
+            customBorder: const CircleBorder(),
+            child: Ink(
+              width: 49,
+              height: 49,
+              decoration: const ShapeDecoration(
+                color: Color.fromRGBO(221, 221, 221, 1),
+                shape: CircleBorder(),
+              ),
+              child: const Icon(Icons.arrow_back),
+            ),
           ),
         ),
       ],
