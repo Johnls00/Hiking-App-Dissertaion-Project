@@ -36,6 +36,7 @@ Future<void> addTrailLine(
   }
 }
 
+// a helper method to focus the camera postion to view the whole trail line or shape
 Future<void> cameraBoundsFromPoints(
   MapboxMap mapboxMapController,
   List<Point> points,
