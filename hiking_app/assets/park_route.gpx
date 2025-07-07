@@ -20,9 +20,6 @@
     <cmt>3</cmt>
     <desc>3</desc>
   </wpt>
-  <wpt lat="0" lon="0">
-    <ele>0</ele>
-  </wpt>
   <wpt lat="54.099282" lon="-6.184922">
     <ele>62.353444766487</ele>
     <name>waypoint 2</name>
