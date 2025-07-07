@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/utilities/maping_utils.dart';
+import 'package:hiking_app/utilities/user_location_tracker.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
@@ -10,18 +13,47 @@ class MapViewScreen extends StatefulWidget {
   State<MapViewScreen> createState() => _MapViewScreenState();
 }
 
-late MapboxMap mapboxMap;
+StreamSubscription? userPositionStream;
 
 class _MapViewScreenState extends State<MapViewScreen> {
-  void _onMapCreated(MapboxMap controller) async {
-    mapboxMap = controller;
+  TrailRoute? _trailRoute; // Store trailRoute from args for use in callbacks
+  late MapboxMap mapboxMapController;
 
-    await mapboxMap.scaleBar.updateSettings(ScaleBarSettings(enabled: true));
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
+  void dispose() {
+    userPositionStream?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _onMapCreated(MapboxMap controller) async {
+    mapboxMapController = controller;
+    // mapboxMapController.loadStyleURI('mapbox://styles/mapbox/outdoors-v12');
+
+    // Enable scale bar
+    await mapboxMapController.scaleBar.updateSettings(
+      ScaleBarSettings(enabled: true),
+    );
+
+    if (_trailRoute == null || _trailRoute!.trackpoints.isEmpty) return;
+
+    mapboxMapController.location.updateSettings(
+      LocationComponentSettings(enabled: true, pulsingEnabled: true),
+    );
+
+    // Draw the trail line on the map
+    await addTrailLine(mapboxMapController ,_trailRoute!.trackpoints);
+    await setupPositionTracking(mapboxMapController);
+  }
+
+
+  @override
   Widget build(BuildContext context) {
-    final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
+    _trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
 
     return Scaffold(
       backgroundColor: Color.fromRGBO(241, 244, 248, 1),
@@ -45,7 +77,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
                         SizedBox(width: 20),
                         Flexible(
                           flex: 1,
-
                           child: Material(
                             color: Color.fromRGBO(221, 221, 221, 1),
                             borderRadius: BorderRadius.circular(25),
@@ -55,7 +86,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                                 height: 49,
                                 child: Center(
                                   child: Text(
-                                    trailRoute.name,
+                                    _trailRoute!.name,
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: Colors.black,
@@ -68,16 +99,15 @@ class _MapViewScreenState extends State<MapViewScreen> {
                         ),
                         SizedBox(width: 69),
                       ],
-                    ), // or BackButton()
+                    ),
                   ),
-                  // Add more widgets here
                   Spacer(),
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(16),
                     color: Colors.white,
                     child: Text(
-                      'Trail: ${trailRoute.name}',
+                      'Trail: ${_trailRoute!.name}',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
