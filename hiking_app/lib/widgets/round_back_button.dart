@@ -14,9 +14,6 @@ class RoundBackButton extends StatelessWidget {
           shape: const CircleBorder(),
           child: InkWell(
             onTap: () {
-              print(
-                "Popping back to: ${ModalRoute.of(context)?.settings.name}",
-              );
               Navigator.pop(context);
             },
             customBorder: const CircleBorder(),
