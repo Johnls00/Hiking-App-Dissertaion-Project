@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
 import 'package:hiking_app/screens/trail_waypoints_view.dart';
+import 'package:hiking_app/utilities/maping_utils.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
@@ -14,11 +14,13 @@ class TrailViewScreen extends StatefulWidget {
   State<TrailViewScreen> createState() => _TrailViewScreenState();
 }
 
-late MapboxMap mapboxMap;
+late MapboxMap mapboxMapController;
 
 class _TrailViewScreenState extends State<TrailViewScreen> {
   void _onMapCreated(MapboxMap controller) async {
-    mapboxMap = controller;
+    mapboxMapController = controller;
+    await mapboxMapController.loadStyleURI(MapboxStyles.OUTDOORS);
+    if (!mounted) return;
     final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
 
     final lineString = LineString(
@@ -27,13 +29,13 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
     final feature = Feature(geometry: lineString, id: "route_line");
     final featureCollection = FeatureCollection(features: [feature]);
 
-    await mapboxMap.style.addSource(
+    await mapboxMapController.style.addSource(
       GeoJsonSource(id: "line", data: jsonEncode(featureCollection.toJson())),
     );
 
-    await mapboxMap.style.addLayer(
+    await mapboxMapController.style.addLayer(
       LineLayer(
-        slot: "middle",
+        slot: LayerSlot.MIDDLE,
         id: "line_layer_trail_overview",
         sourceId: "line",
         lineColor: Colors.red.toARGB32(),
@@ -43,6 +45,8 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
         lineWidth: 6.0,
       ),
     );
+
+    await cameraBoundsFromPoints(mapboxMapController, trailRoute.trackpoints);
   }
 
   @override
@@ -138,7 +142,7 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                         ],
                       ),
                       Text(
-                        "Elevation",
+                        "Elevation Gain",
                         style: TextStyle(color: Colors.black45, fontSize: 16),
                       ),
                     ],
@@ -148,8 +152,7 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                       Row(
                         children: [
                           Text(
-                            ((trailRoute.distance) * 5.1 / 1000)
-                                .toStringAsFixed(2),
+                            trailRoute.timeToComplete.inMinutes.toString(),
                             style: TextStyle(fontSize: 32, color: Colors.black),
                           ),
                           Text(
@@ -170,10 +173,13 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
               Row(
                 children: [
                   SizedBox(width: 10),
-                  Text(
-                    trailRoute.description,
-                    style: TextStyle(color: Colors.black, fontSize: 13),
+                  Expanded(
+                    child: Text(
+                      trailRoute.description,
+                      style: TextStyle(color: Colors.black, fontSize: 13), softWrap: true,
+                    ),
                   ),
+                  SizedBox(width: 10),
                 ],
               ),
               Divider(color: Colors.black, indent: 10, endIndent: 10),
@@ -201,10 +207,10 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                       waypointIndex,
                     ), // rebuilds map when index changes
                     onMapCreated: _onMapCreated,
-                    cameraOptions: CameraOptions(
-                      center: trailRoute.trackpoints.first,
-                      zoom: 15.5,
-                    ),
+                    // cameraOptions: CameraOptions(
+                    //   center: trailRoute.trackpoints.first,
+                    //   zoom: 15.5,
+                    // ),
                   ),
                 ),
               ),
@@ -233,7 +239,9 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                         ),
                         child: Icon(Icons.flag_outlined),
                       ),
-                      const SizedBox(width: 10), // spacing between icon and text
+                      const SizedBox(
+                        width: 10,
+                      ), // spacing between icon and text
                       Expanded(
                         child: Text(
                           "Explore points of interest",
@@ -272,7 +280,9 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                         ),
                         child: Icon(Icons.rate_review_outlined),
                       ),
-                      const SizedBox(width: 10), // spacing between icon and text
+                      const SizedBox(
+                        width: 10,
+                      ), // spacing between icon and text
                       Expanded(
                         child: Text(
                           "Read reviews",
@@ -304,7 +314,16 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          TextButton(onPressed: () {}, child: Text("Download", style: TextStyle(fontSize: 13, color: Colors.black),)),
+                          TextButton(
+                            onPressed: () {},
+                            child: Text(
+                              "Download",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -322,7 +341,22 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          TextButton(onPressed: () {}, child: Text("View Map", style: TextStyle(fontSize: 13, color: Colors.black),)),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/map_view',
+                                arguments: trailRoute,
+                              );
+                            },
+                            child: Text(
+                              "View Map",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
