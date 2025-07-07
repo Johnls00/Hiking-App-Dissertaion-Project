@@ -3,6 +3,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:gpx/gpx.dart';
 import 'package:geolocator/geolocator.dart' hide Position;
+import 'package:collection/collection.dart';
 import 'package:hiking_app/models/waypoint.dart';
 
 class GpxFileUtil {
@@ -17,6 +18,25 @@ class GpxFileUtil {
   static List<Waypoint> mapWaypoints(Gpx gpxFile) {
     List<Waypoint> mappedWaypoints = [];
 
+    // Step 1: Add first trkpt as wpt if no wpts exist
+    if (gpxFile.wpts.isEmpty) {
+      final firstTrkpt = gpxFile.trks
+          .expand((trk) => trk.trksegs)
+          .expand((seg) => seg.trkpts)
+          .toList()
+          .firstWhereOrNull((pt) => pt.lat != null && pt.lon != null);
+
+      if (firstTrkpt != null) {
+        final newWpt = Wpt()
+          ..lat = firstTrkpt.lat
+          ..lon = firstTrkpt.lon;
+
+        gpxFile.wpts.add(newWpt);
+        print("Added fallback waypoint from first trackpoint.");
+      }
+    }
+
+    // Step 2: Map all (now-guaranteed) wpts
     for (var wpt in gpxFile.wpts) {
       double? lon = wpt.lon;
       double? lat = wpt.lat;
@@ -25,19 +45,15 @@ class GpxFileUtil {
       String? waypointName = wpt.name;
       String? description = wpt.desc;
 
-      if (lon != null &&
-          lat != null &&
-          ele != null &&
-          waypointName != null &&
-          description != null) {
+      if (lon != null && lat != null) {
         mappedWaypoints.add(
           Waypoint(
-            name: waypointName,
-            description: description,
+            name: waypointName ?? "Start of trail",
+            description: description ?? "",
             distanceFromStart: distanceFromStart,
             lat: lat,
             lon: lon,
-            ele: ele,
+            ele: ele ?? 0.0,
           ),
         );
       }
@@ -83,7 +99,9 @@ class GpxFileUtil {
         p2.lat!,
         p2.lon!,
       );
-      final elevationDiff = (p2.ele! - p1.ele!);
+      final elevationDiff = (p1.ele != null && p2.ele != null)
+          ? (p2.ele! - p1.ele!)
+          : 0.0;
       final distance = sqrt(pow(flatDistance, 2) + pow(elevationDiff, 2));
 
       totalDistance += distance;
@@ -101,8 +119,6 @@ class GpxFileUtil {
     double timeInSeconds = distanceMeters / speedMetersPerSecond;
     return Duration(seconds: timeInSeconds.round());
   }
-
-  // ((trailRoute.distance) / (5.1 * 1000) * 60.toStringAsFixed(2),
 
   // a method to caculate the distance of a waypoint from the start of a trail
   static double calculateDistanceFromStart(Gpx gpxFile, point) {
@@ -141,25 +157,27 @@ class GpxFileUtil {
 
   // a method which calculates the elevation gain of a trail
   static double calculateElevationGain(Gpx gpxFile) {
-  final points = gpxFile.trks
-      .expand((trk) => trk.trksegs)
-      .expand((seg) => seg.trkpts)
-      .toList();
+    final points = gpxFile.trks
+        .expand((trk) => trk.trksegs)
+        .expand((seg) => seg.trkpts)
+        .toList();
 
-  double elevationGain = 0.0;
+    double elevationGain = 0.0;
 
-  for (int i = 0; i < points.length - 1; i++) {
-    final currentEle = points[i].ele;
-    final nextEle = points[i + 1].ele;
+    for (int i = 0; i < points.length - 1; i++) {
+      final currentEle = points[i].ele;
+      final nextEle = points[i + 1].ele;
 
-    if (currentEle != null && nextEle != null) {
-      double diff = nextEle - currentEle;
-      if (diff > 0) {
-        elevationGain += diff;
+      if (currentEle != null && nextEle != null) {
+        double diff = nextEle - currentEle;
+        if (diff > 0) {
+          elevationGain += diff;
+        }
       }
     }
+
+    return elevationGain; // in meters
   }
 
-  return elevationGain; // in meters
-}
+  
 }
