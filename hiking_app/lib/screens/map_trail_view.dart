@@ -1,23 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hiking_app/models/route.dart';
 import 'package:hiking_app/utilities/maping_utils.dart';
 import 'package:hiking_app/utilities/user_location_tracker.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Position;
+import 'package:latlong2/latlong.dart';
+import 'package:hiking_app/utilities/geofence_utils.dart';
 
-class MapViewScreen extends StatefulWidget {
-  const MapViewScreen({super.key});
+class MapTrailViewScreen extends StatefulWidget {
+  const MapTrailViewScreen({super.key});
 
   @override
-  State<MapViewScreen> createState() => _MapViewScreenState();
+  State<MapTrailViewScreen> createState() => _MapTrailViewScreenState();
 }
 
 StreamSubscription? userPositionStream;
 
-class _MapViewScreenState extends State<MapViewScreen> {
+class _MapTrailViewScreenState extends State<MapTrailViewScreen> {
   TrailRoute? _trailRoute; // Store trailRoute from args for use in callbacks
   late MapboxMap mapboxMapController;
+  List<LatLng> geofenceTrailPoints = [];
 
   @override
   void initState() {
@@ -46,10 +50,32 @@ class _MapViewScreenState extends State<MapViewScreen> {
     );
 
     // Draw the trail line on the map
-    await addTrailLine(mapboxMapController ,_trailRoute!.trackpoints);
+    await addTrailLine(mapboxMapController, _trailRoute!.trackpoints);
     await setupPositionTracking(mapboxMapController);
   }
 
+  Future<void> _startTrailFollowing() async {
+  if (_trailRoute == null || _trailRoute!.trackpoints.isEmpty) return;
+
+  // Convert to LatLng points
+  geofenceTrailPoints = _trailRoute!.trackpoints
+      .map((e) => LatLng(e.coordinates.lat.toDouble() , e.coordinates.lng.toDouble()))
+      .toList();
+
+  Position pos = await Geolocator.getCurrentPosition();
+  LatLng user = LatLng(pos.latitude, pos.longitude);
+
+  // 3. Get trail start or closest point
+  LatLng trailPoint = geofenceTrailPoints.first;
+
+  // 4. Draw line
+  await addLineBetweenPoints(mapboxMapController, user, trailPoint);
+
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Started following trail: ${_trailRoute!.name}')),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -101,17 +127,39 @@ class _MapViewScreenState extends State<MapViewScreen> {
                       ],
                     ),
                   ),
+                  SizedBox(height: 10),
                   Spacer(),
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(16),
-                    color: Colors.white,
-                    child: Text(
-                      'Trail: ${_trailRoute!.name}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _startTrailFollowing,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Start Following Trail',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hiking_app/env/env.dart';
 import 'package:hiking_app/screens/login.dart';
-import 'package:hiking_app/screens/map_view.dart';
+import 'package:hiking_app/screens/map_trail_view.dart';
 import 'package:hiking_app/screens/trail_browse.dart';
 import 'package:hiking_app/screens/trail_view.dart';
 import 'package:hiking_app/screens/trail_waypoints_view.dart';
@@ -19,7 +19,7 @@ void main() async {
         '/home': (context) => TrailBrowserScreen(),
         '/trail_view': (content) => TrailViewScreen(),
         '/trail_waypoints_view': (content) => TrailWaypointsScreen(),
-        '/map_view': (content) => MapViewScreen(),
+        '/map_view': (content) => MapTrailViewScreen(),
       },
     ),
   );

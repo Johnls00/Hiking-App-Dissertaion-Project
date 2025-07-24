@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
@@ -19,34 +18,19 @@ late MapboxMap mapboxMapController;
 class _TrailViewScreenState extends State<TrailViewScreen> {
   void _onMapCreated(MapboxMap controller) async {
     mapboxMapController = controller;
+
     await mapboxMapController.loadStyleURI(MapboxStyles.OUTDOORS);
+
     if (!mounted) return;
     final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
 
-    final lineString = LineString(
-      coordinates: trailRoute.trackpoints.map((p) => p.coordinates).toList(),
-    );
-    final feature = Feature(geometry: lineString, id: "route_line");
-    final featureCollection = FeatureCollection(features: [feature]);
-
-    await mapboxMapController.style.addSource(
-      GeoJsonSource(id: "line", data: jsonEncode(featureCollection.toJson())),
-    );
-
-    await mapboxMapController.style.addLayer(
-      LineLayer(
-        slot: LayerSlot.MIDDLE,
-        id: "line_layer_trail_overview",
-        sourceId: "line",
-        lineColor: Colors.red.toARGB32(),
-        lineBorderColor: Colors.red.shade900.toARGB32(),
-        lineJoin: LineJoin.ROUND,
-        lineCap: LineCap.ROUND,
-        lineWidth: 6.0,
-      ),
-    );
-
+    // adding the trail line to the map 
+    await addTrailLine(mapboxMapController, trailRoute.trackpoints);
+    
+    // focusing the map view to show the whole route line
     await cameraBoundsFromPoints(mapboxMapController, trailRoute.trackpoints);
+
+    print(trailRoute.waypoints[0].toString());
   }
 
   @override
@@ -176,7 +160,8 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
                   Expanded(
                     child: Text(
                       trailRoute.description,
-                      style: TextStyle(color: Colors.black, fontSize: 13), softWrap: true,
+                      style: TextStyle(color: Colors.black, fontSize: 13),
+                      softWrap: true,
                     ),
                   ),
                   SizedBox(width: 10),

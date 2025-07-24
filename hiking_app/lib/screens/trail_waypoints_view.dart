@@ -1,10 +1,13 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/utilities/maping_utils.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class TrailWaypointsScreen extends StatefulWidget {
+
+  
+
   const TrailWaypointsScreen({super.key});
 
   @override
@@ -13,54 +16,47 @@ class TrailWaypointsScreen extends StatefulWidget {
 
 int waypointIndex = 0;
 
-late MapboxMap mapboxMap;
+late MapboxMap mapboxMapController;
 CircleAnnotationManager? circleAnnotationManager;
 
 class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
+  
+  @override
+  void initState() {
+    super.initState();
+    waypointIndex = 0;
+  }
   void _onMapCreated(MapboxMap controller) async {
-    mapboxMap = controller;
+    mapboxMapController = controller;
+    await mapboxMapController.loadStyleURI(MapboxStyles.OUTDOORS);
 
-    circleAnnotationManager = await mapboxMap.annotations
+    circleAnnotationManager = await mapboxMapController.annotations
         .createCircleAnnotationManager();
+
 
     await circleAnnotationManager?.deleteAll();
 
-    final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
-    final waypoint = trailRoute.waypoints[waypointIndex];
-    // Load the image from assets
-    // final ByteData bytes = await rootBundle.load('assets/icons/waypoint-marker.png');
-    // final Uint8List imageData = bytes.buffer.asUint8List();
+    if (!mounted) return;
 
-    // Create a PointAnnotationOptions
-    CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
-      geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat) ),
-      circleColor: Colors.blue.toARGB32(), // Example coordinates
-      circleOpacity: 1,
-      circleRadius: 10,
-    );
+    try {
+      final trailRoute =
+          ModalRoute.of(context)!.settings.arguments as TrailRoute;
+      final waypoint = trailRoute.waypoints[waypointIndex];
 
-    circleAnnotationManager?.create(circleAnnotationOptions);
+      await addTrailLine(mapboxMapController, trailRoute.trackpoints);
 
-    final lineString = LineString(coordinates: trailRoute.trackpoints.map((p) => p.coordinates).toList(),);
-    final feature = Feature(geometry: lineString, id: "route_line");
-    final featureCollection = FeatureCollection(features: [feature]);
+      CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
+        geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)),
+        circleColor: Colors.blue.toARGB32(),
+        circleOpacity: 1,
+        circleRadius: 10,
+      );
 
-    await mapboxMap.style.addSource(
-      GeoJsonSource(id: "line", data: jsonEncode(featureCollection.toJson())),
-    );
-
-    await mapboxMap.style.addLayer(
-      LineLayer(
-        slot: "middle",
-        id: "line_layer",
-        sourceId: "line",
-        lineColor: Colors.red.toARGB32(),
-        lineBorderColor: Colors.red.shade900.toARGB32(),
-        lineJoin: LineJoin.ROUND,
-        lineCap: LineCap.ROUND,
-        lineWidth: 6.0,
-      ),
-    );
+      circleAnnotationManager?.create(circleAnnotationOptions);
+    } catch (e, stack) {
+      debugPrint("Error in _onMapCreated: $e");
+      debugPrintStack(stackTrace: stack);
+    }
   }
 
   @override
@@ -129,10 +125,21 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        trailRoute.waypoints[waypointIndex].distanceFromStart
-                            .toStringAsFixed(2),
-                        style: TextStyle(fontSize: 32),
+                      Row(
+                        children: [
+                          Text(
+                            (trailRoute
+                                        .waypoints[waypointIndex]
+                                        .distanceFromStart /
+                                    1000)
+                                .toStringAsFixed(2),
+                            style: TextStyle(fontSize: 32),
+                          ),
+                          Text(
+                            "km",
+                            style: TextStyle(color: Colors.black, fontSize: 20),
+                          ),
+                        ],
                       ),
                       Text(
                         "Distance",
@@ -148,11 +155,18 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        trailRoute.waypoints[waypointIndex].ele.toStringAsFixed(
-                          2,
-                        ),
-                        style: TextStyle(fontSize: 32),
+                      Row(
+                        children: [
+                          Text(
+                            trailRoute.waypoints[waypointIndex].ele
+                                .toStringAsFixed(2),
+                            style: TextStyle(fontSize: 32),
+                          ),
+                          Text(
+                            "m",
+                            style: TextStyle(color: Colors.black, fontSize: 20),
+                          ),
+                        ],
                       ),
                       Text(
                         "Elevation",

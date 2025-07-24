@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as ll; 
 
 // Helper to add trail line layer
 Future<void> addTrailLine(
@@ -80,4 +81,51 @@ Future<void> cameraBoundsFromPoints(
     offset,
   );
   await mapboxMapController.setCamera(camera);
+}
+
+
+Future<void> addLineBetweenPoints(
+  MapboxMap mapboxMapController,
+  ll.LatLng start,
+  ll.LatLng end, {
+  String sourceId = 'user-trail-connector-source',
+  String layerId = 'user-trail-connector-layer',
+  int lineColorHex = 0xFF2196F3, // blue
+  double lineWidth = 4.0,
+}) async {
+  // Remove existing layer and source if any
+  try {
+    await mapboxMapController.style.removeStyleLayer(layerId);
+    await mapboxMapController.style.removeStyleSource(sourceId);
+  } catch (_) {
+    // Safe to ignore if not found
+  }
+
+  // Define the GeoJSON LineString feature
+  final geoJson = {
+    "type": "Feature",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [start.longitude, start.latitude],
+        [end.longitude, end.latitude],
+      ],
+    }
+  };
+
+  final String geoJsonString = jsonEncode(geoJson);
+
+  // Add source
+  await mapboxMapController.style.addSource(GeoJsonSource(
+    id: sourceId,
+    data: geoJsonString,
+  ));
+
+  // Add line layer
+  await mapboxMapController.style.addLayer(LineLayer(
+    id: layerId,
+    sourceId: sourceId,
+    lineColor: lineColorHex,
+    lineWidth: lineWidth,
+  ));
 }
