@@ -2,8 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location to track trails.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>need location services to track user location when using app.</string>
+	<string>We use your location while app is open.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+	<string>location</string>
+	<string>fetch</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

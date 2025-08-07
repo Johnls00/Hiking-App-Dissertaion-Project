@@ -4,6 +4,6 @@ part 'env.g.dart';
 
 @Envied(path: '.env')
 abstract class Env {
-  @EnviedField(varName: 'MAPBOX_KEY', obfuscate: true)
+  @EnviedField(varName: 'MAPBOX_ACCESS_KEY', obfuscate: true)
   static final String mapboxKey = _Env.mapboxKey;
 }

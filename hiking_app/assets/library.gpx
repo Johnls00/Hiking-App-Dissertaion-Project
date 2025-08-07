@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="https://gpx.studio" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/PowerExtension/v1 http://www.garmin.com/xmlschemas/PowerExtensionv1.xsd http://www.topografix.com/GPX/gpx_style/0/2 http://www.topografix.com/GPX/gpx_style/0/2/gpx_style.xsd" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1" xmlns:gpx_style="http://www.topografix.com/GPX/gpx_style/0/2">
+  <metadata>
+    <name>New file 1</name>
+    <author>
+      <name>gpx.studio</name>
+      <link href="https://gpx.studio"/>
+    </author>
+  </metadata>
+  <wpt lat="0" lon="0">
+    <ele>0</ele>
+  </wpt>
+  <trk>
+    <name>New file 1</name>
+    <trkseg>
+      <trkpt lat="54.583903823967574" lon="-5.931859023203799">
+        <ele>14.975492674556559</ele>
+      </trkpt>
+      <trkpt lat="54.583974478336586" lon="-5.93187625414933">
+        <ele>15.303940941952963</ele>
+      </trkpt>
+      <trkpt lat="54.584006257671206" lon="-5.93225179216256">
+        <ele>16.2877813785703</ele>
+      </trkpt>
+      <trkpt lat="54.58356027110096" lon="-5.932350776481099">
+        <ele>17.702975420863943</ele>
+      </trkpt>
+      <trkpt lat="54.583555371049755" lon="-5.932351864021086">
+        <ele>17.71887678154808</ele>
+      </trkpt>
+      <trkpt lat="54.583500167409994" lon="-5.932206173825023">
+        <ele>18.292337489408478</ele>
+      </trkpt>
+      <trkpt lat="54.58343778911646" lon="-5.9319301755569995">
+        <ele>18.195150968968655</ele>
+      </trkpt>
+      <trkpt lat="54.583650488667786" lon="-5.931924743769372">
+        <ele>16.679791431967864</ele>
+      </trkpt>
+      <trkpt lat="54.583903823967574" lon="-5.931859023203799">
+        <ele>14.975492674556559</ele>
+      </trkpt>
+      <trkpt lat="54.583903823967574" lon="-5.931859023203799">
+        <ele>14.975492674556559</ele>
+      </trkpt>
+      <trkpt lat="54.583650488667786" lon="-5.931924743769372">
+        <ele>16.679791431967864</ele>
+      </trkpt>
+      <trkpt lat="54.58343778911646" lon="-5.9319301755569995">
+        <ele>18.195150968968655</ele>
+      </trkpt>
+      <trkpt lat="54.583500167409994" lon="-5.932206173825023">
+        <ele>18.292337489408478</ele>
+      </trkpt>
+      <trkpt lat="54.583555371049755" lon="-5.932351864021086">
+        <ele>17.71887678154808</ele>
+      </trkpt>
+      <trkpt lat="54.58356027110096" lon="-5.932350776481099">
+        <ele>17.702975420863943</ele>
+      </trkpt>
+      <trkpt lat="54.584006257671206" lon="-5.93225179216256">
+        <ele>16.2877813785703</ele>
+      </trkpt>
+      <trkpt lat="54.583974478336586" lon="-5.93187625414933">
+        <ele>15.303940941952963</ele>
+      </trkpt>
+      <trkpt lat="54.583903823967574" lon="-5.931859023203799">
+        <ele>14.975492674556559</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -42,10 +42,11 @@ dependencies:
   mapbox_maps_flutter: ^2.9.0
   flutter_dotenv: ^5.1.0
   image: ^4.5.4
-  geolocator: ^14.0.1
+  geolocator: ^14.0.2
   geojson: ^1.0.0
-  background_fetch: ^1.1.2
-  flutter_local_notifications: ^16.3.2
+  dio: ^5.8.0+1
+  latlong2: ^0.8.2
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +79,9 @@ flutter:
     - assets/
     - assets/park_route.gpx
     - assets/mourne_way.gpx
+    - assets/library.gpx
+    - assets/lawrence street loop.gpx
+    - assets/san_fran_test.gpx
     - assets/icons/waypoint-marker.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
