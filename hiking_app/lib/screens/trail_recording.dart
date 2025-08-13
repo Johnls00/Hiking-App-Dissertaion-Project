@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' as gl;
+import 'package:hiking_app/models/trackpoint.dart';
+import 'package:hiking_app/utilities/maping_utils.dart';
 import 'package:hiking_app/utilities/user_location_tracker.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
-    hide Position, LocationSettings;
+    hide LocationSettings;
 import 'package:latlong2/latlong.dart';
+import 'package:hiking_app/utilities/gpx_file_util.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class TrailRecordingScreen extends StatefulWidget {
   const TrailRecordingScreen({super.key});
@@ -16,7 +22,7 @@ class TrailRecordingScreen extends StatefulWidget {
 
 class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   late MapboxMap mapboxMapController;
-  StreamSubscription<Position>? _userPositionStream;
+  StreamSubscription<gl.Position>? _userPositionStream;
 
   final Distance _distance = Distance();
   bool _isRecording = false;
@@ -29,7 +35,8 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   LatLng? _lastPosition;
   Timer? _elapsedTimer;
 
-  List<LatLng> _recordedPath = [];
+  List<Trackpoint> _recordedPath = [];
+  List<Point> _userTrailPointsLine = [];
 
   @override
   void dispose() {
@@ -61,6 +68,13 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   }
 
   Future<void> _startRecording() async {
+    // Ensure location services are enabled
+    final isLocationEnabled = await gl.Geolocator.isLocationServiceEnabled();
+    if (!isLocationEnabled) {
+      debugPrint('Location services are disabled');
+      return;
+    }
+
     setState(() {
       _isRecording = true;
       _startTime = DateTime.now();
@@ -69,6 +83,9 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
       _currentSpeed = 0;
       _currentElevation = 0;
       _recordedPath.clear();
+      _userTrailPointsLine.clear();
+      _lastPosition = null;
+      // Reset last position
     });
 
     // Start elapsed time timer
@@ -80,47 +97,124 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
       }
     });
 
-    // Get initial position
-    try {
-      final Position pos = await Geolocator.getCurrentPosition();
-      _currentSpeed = pos.speed;
-      _currentElevation = pos.altitude;
-      _lastPosition = LatLng(pos.latitude, pos.longitude);
-      _recordedPath.add(_lastPosition!);
-    } catch (e) {
-      debugPrint('Error getting initial position: $e');
+    if (_userTrailPointsLine.isEmpty) {
+      final initialPosition = await gl.Geolocator.getCurrentPosition();
+      _userTrailPointsLine.add(
+        Point(
+          coordinates: Position(
+            initialPosition.longitude,
+            initialPosition.latitude,
+          ),
+        ),
+      );
+      _recordedPath.add(
+        Trackpoint(
+          lat: initialPosition.latitude.toDouble(),
+          lon: initialPosition.longitude.toDouble(),
+          ele: initialPosition.altitude.toDouble(),
+        ),
+      );
     }
 
-    // Start tracking position for recording
-    _userPositionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 5, // Record point every 5 meters
-      ),
-    ).listen((position) {
-      final LatLng userLocation = LatLng(
-        position.latitude,
-        position.longitude,
-      );
+    // Build platform-specific location settings for high-frequency updates
+    final gl.LocationSettings locationSettings = Platform.isAndroid
+        ? gl.AndroidSettings(
+            accuracy: gl.LocationAccuracy.best,
+            distanceFilter: 5, // meters
+            // intervalDuration: const Duration(seconds: 1),
+            timeLimit: Duration(seconds: 1), // request updates ~1s
+            forceLocationManager: true,
+            foregroundNotificationConfig: const gl.ForegroundNotificationConfig(
+              notificationTitle: 'Trail recording',
+              notificationText: 'Recording your trail in the background',
+              enableWakeLock: true,
+            ),
+          )
+        : gl.AppleSettings(
+            accuracy: gl.LocationAccuracy.best,
+            distanceFilter: 5, // meters
+            timeLimit: Duration(seconds: 1), // request updates ~1s
+            activityType: gl.ActivityType.fitness,
+            allowBackgroundLocationUpdates: true,
+            pauseLocationUpdatesAutomatically: false,
+            showBackgroundLocationIndicator: true,
+          );
 
-      // Update recording statistics
-      if (_lastPosition != null) {
-        final double delta = _distance(userLocation, _lastPosition!);
-        _totalDistance += delta;
-      }
+    // Start tracking position for recording - remove initial position setup
+    _userPositionStream =
+        gl.Geolocator.getPositionStream(
+          locationSettings: locationSettings,
+        ).listen((position) {
+          final LatLng userLocation = LatLng(
+            position.latitude,
+            position.longitude,
+          );
 
-      _lastPosition = userLocation;
-      _currentSpeed = position.speed;
-      _currentElevation = position.altitude;
-      _recordedPath.add(userLocation);
+          final ts = position.timestamp?.toIso8601String() ?? 'no-ts';
+          debugPrint(
+            'pos @ $ts '
+            'lat=${position.latitude}, lon=${position.longitude} '
+            'acc=${position.accuracy}m speed=${position.speed} '
+            'alt=${position.altitude}',
+          );
+          if (_lastPosition != null) {
+            final delta = _distance.as(
+              LengthUnit.Meter,
+              _lastPosition!,
+              LatLng(position.latitude, position.longitude),
+            );
+            debugPrint('Δdist = ${delta.toStringAsFixed(1)} m');
+          }
 
-      if (mounted) setState(() {});
-    });
+          // Always add new trackpoint for every position update
+          _recordedPath.add(
+            Trackpoint(
+              lat: position.latitude.toDouble(),
+              lon: position.longitude.toDouble(),
+              ele: position.altitude.toDouble(),
+            ),
+          );
+
+          // Update recording statistics if we have a previous position
+          if (_lastPosition != null) {
+            final double delta = _distance.as(
+              LengthUnit.Meter,
+              _lastPosition!,
+              userLocation,
+            );
+            debugPrint(
+              'Distance from last point: ${delta.toStringAsFixed(2)} m',
+            );
+            _totalDistance += delta;
+          }
+
+          // Update current position and stats
+          _lastPosition = userLocation;
+          _currentSpeed = position.speed;
+          _currentElevation = position.altitude;
+          debugPrint(
+            'Current speed: ${_currentSpeed.toStringAsFixed(2)} m/s, '
+            'Elevation: ${_currentElevation.toStringAsFixed(2)} m',
+          );
+
+          final lat = position.latitude.toDouble();
+          final lon = position.longitude.toDouble();
+          _userTrailPointsLine.add(Point(coordinates: Position(lon, lat)));
+
+          addUserTrailLine(mapboxMapController, _userTrailPointsLine);
+
+          // Debug print for tracking
+          debugPrint(
+            'Recorded point ${_recordedPath.length}: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}',
+          );
+
+          if (mounted) setState(() {});
+        });
 
     debugPrint('🔴 Started trail recording');
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _userPositionStream?.cancel();
     _elapsedTimer?.cancel();
 
@@ -137,8 +231,36 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
     debugPrint('🛑 Stopped trail recording');
     debugPrint('📊 Recorded ${_recordedPath.length} points');
 
+    // debugPrint('Saving GPX with ${_recordedPath.length} points');
+    // for (var i = 0; i < (_recordedPath.length).clamp(0, 3); i++) {
+    //   final tp = _recordedPath[i];
+    //   debugPrint('  pt[$i] lat=${tp.lat}, lon=${tp.lon}, ele=${tp.ele}');
+    // }
+    // final xml = GpxFileUtil.gpxFromTrackpoints(_recordedPath);
+    // debugPrint(xml.substring(0, xml.indexOf('</trkseg>') + 9));
     // TODO: Save recorded trail to storage/database
+    await _saveRecording();
     _recordedPath.clear();
+  }
+
+  Future<void> _saveRecording() async {
+    if (_recordedPath.isEmpty) {
+      debugPrint('⚠️ No points recorded; skipping GPX save.');
+      return;
+    }
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final path = p.join(dir.path, 'my_recording.gpx');
+      await GpxFileUtil.saveTrackpointsAsGpx(
+        _recordedPath,
+        path,
+        name: 'Trail Recording',
+      );
+      debugPrint('✅ GPX saved to $path');
+    } catch (e, st) {
+      debugPrint('❌ Failed to save GPX: $e');
+      debugPrint(st.toString());
+    }
   }
 
   Widget _buildRecordingOverview() {
@@ -224,7 +346,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatCard("Speed", _currentSpeed.toStringAsFixed(1), "m/s"),
+            _buildStatCard("Speed", _currentSpeed.toStringAsFixed(1), "km/s"),
             _buildStatCard("Points", _recordedPath.length.toString(), ""),
           ],
         ),
@@ -324,7 +446,11 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.fiber_manual_record, color: Colors.white, size: 16),
+                      Icon(
+                        Icons.fiber_manual_record,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Recording Trail',
@@ -347,10 +473,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
                   Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Row(
-                      children: [
-                        RoundBackButton(),
-                        SizedBox(width: 16),
-                      ],
+                      children: [RoundBackButton(), SizedBox(width: 16)],
                     ),
                   ),
                   Spacer(),

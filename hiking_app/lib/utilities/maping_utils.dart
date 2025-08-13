@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:hiking_app/models/waypoint.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:latlong2/latlong.dart' as ll; 
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:hiking_app/models/trail_geofence.dart';
 import 'package:hiking_app/utilities/trail_geofence_builder.dart';
 
@@ -52,7 +53,10 @@ Future<void> addDirectionsLine(
     final featureCollection = FeatureCollection(features: [feature]);
 
     await mapboxMapController.style.addSource(
-      GeoJsonSource(id: "directions_line_style", data: jsonEncode(featureCollection.toJson())),
+      GeoJsonSource(
+        id: "directions_line_style",
+        data: jsonEncode(featureCollection.toJson()),
+      ),
     );
 
     await mapboxMapController.style.addLayer(
@@ -146,24 +150,25 @@ Future<void> addLineBetweenPoints(
         [start.longitude, start.latitude],
         [end.longitude, end.latitude],
       ],
-    }
+    },
   };
 
   final String geoJsonString = jsonEncode(geoJson);
 
   // Add source
-  await mapboxMapController.style.addSource(GeoJsonSource(
-    id: sourceId,
-    data: geoJsonString,
-  ));
+  await mapboxMapController.style.addSource(
+    GeoJsonSource(id: sourceId, data: geoJsonString),
+  );
 
   // Add line layer
-  await mapboxMapController.style.addLayer(LineLayer(
-    id: layerId,
-    sourceId: sourceId,
-    lineColor: lineColorHex,
-    lineWidth: lineWidth,
-  ));
+  await mapboxMapController.style.addLayer(
+    LineLayer(
+      id: layerId,
+      sourceId: sourceId,
+      lineColor: lineColorHex,
+      lineWidth: lineWidth,
+    ),
+  );
 }
 
 Future<void> redrawLineToTrail(
@@ -193,33 +198,39 @@ Future<void> redrawLineToTrail(
   }
 
   // Add new source
-  await mapController.style.addSource(GeoJsonSource(
-    id: sourceId,
-    data: updatedGeoJson,
-  ));
+  await mapController.style.addSource(
+    GeoJsonSource(id: sourceId, data: updatedGeoJson),
+  );
 
   // Add new layer
-  await mapController.style.addLayer(LineLayer(
-    id: layerId,
-    sourceId: sourceId,
-    lineColor: 0xFF2196F3,
-    lineWidth: 4.0,
-  ));
+  await mapController.style.addLayer(
+    LineLayer(
+      id: layerId,
+      sourceId: sourceId,
+      lineColor: 0xFF2196F3,
+      lineWidth: 4.0,
+    ),
+  );
 }
 
-Future<void> drawRouteLine(MapboxMap map, List<List<double>> coordinates) async {
-  final points = coordinates.map((coord) => Position(coord[0], coord[1])).toList();
+Future<void> drawRouteLine(
+  MapboxMap map,
+  List<List<double>> coordinates,
+) async {
+  final points = coordinates
+      .map((coord) => Position(coord[0], coord[1]))
+      .toList();
 
-  final polylineManager = await map.annotations.createPolylineAnnotationManager();
+  final polylineManager = await map.annotations
+      .createPolylineAnnotationManager();
 
   await polylineManager.create(
-  PolylineAnnotationOptions(
-    geometry: LineString(coordinates: points),
-    lineColor: 0xFFFF0000, // red
-    lineWidth: 5.0,
-  )
-);
-
+    PolylineAnnotationOptions(
+      geometry: LineString(coordinates: points),
+      lineColor: 0xFFFF0000, // red
+      lineWidth: 5.0,
+    ),
+  );
 }
 
 /// Add a circular geofence visualization to the map
@@ -237,12 +248,18 @@ Future<void> addGeofenceCircle(
     // Create circle coordinates (approximation using polygon)
     final List<Position> coordinates = [];
     const int numPoints = 64; // Number of points to create smooth circle
-    final double radiusInDegrees = geofence.radius / 111320; // Rough conversion to degrees
+    final double radiusInDegrees =
+        geofence.radius / 111320; // Rough conversion to degrees
 
     for (int i = 0; i <= numPoints; i++) {
       final double angle = (i * 2 * 3.14159265359) / numPoints;
-      final double lat = geofence.center.latitude + (radiusInDegrees * cos(angle));
-      final double lng = geofence.center.longitude + (radiusInDegrees * sin(angle) / cos(geofence.center.latitude * 3.14159265359 / 180));
+      final double lat =
+          geofence.center.latitude + (radiusInDegrees * cos(angle));
+      final double lng =
+          geofence.center.longitude +
+          (radiusInDegrees *
+              sin(angle) /
+              cos(geofence.center.latitude * 3.14159265359 / 180));
       coordinates.add(Position(lng, lat));
     }
 
@@ -277,7 +294,6 @@ Future<void> addGeofenceCircle(
         lineWidth: borderWidth,
       ),
     );
-
   } catch (e, stack) {
     debugPrint("Error in addGeofenceCircle: $e");
     debugPrintStack(stackTrace: stack);
@@ -290,9 +306,15 @@ Future<void> removeGeofenceCircle(
   String geofenceId,
 ) async {
   try {
-    await mapboxMapController.style.removeStyleLayer('geofence-fill-$geofenceId');
-    await mapboxMapController.style.removeStyleLayer('geofence-border-$geofenceId');
-    await mapboxMapController.style.removeStyleSource('geofence-source-$geofenceId');
+    await mapboxMapController.style.removeStyleLayer(
+      'geofence-fill-$geofenceId',
+    );
+    await mapboxMapController.style.removeStyleLayer(
+      'geofence-border-$geofenceId',
+    );
+    await mapboxMapController.style.removeStyleSource(
+      'geofence-source-$geofenceId',
+    );
   } catch (e) {
     // Safe to ignore if layers don't exist
     debugPrint("Geofence layers not found for removal: $e");
@@ -351,14 +373,17 @@ Future<void> addGeofenceCenterMarker(
   TrailGeofence geofence,
 ) async {
   try {
-    final pointAnnotationManager = await mapboxMapController.annotations.createPointAnnotationManager();
-    
+    final pointAnnotationManager = await mapboxMapController.annotations
+        .createPointAnnotationManager();
+
     await pointAnnotationManager.create(
       PointAnnotationOptions(
-        geometry: Point(coordinates: Position(
-          geofence.center.longitude,
-          geofence.center.latitude,
-        )),
+        geometry: Point(
+          coordinates: Position(
+            geofence.center.longitude,
+            geofence.center.latitude,
+          ),
+        ),
         textField: geofence.name,
         textOffset: [0.0, -2.0],
         textColor: 0xFF000000,
@@ -372,7 +397,6 @@ Future<void> addGeofenceCenterMarker(
     debugPrintStack(stackTrace: stack);
   }
 }
-
 
 /// Add corridor geofences along the trail
 Future<void> addTrailCorridorGeofences(
@@ -409,5 +433,94 @@ Future<void> addTrailCorridorGeofences(
     debugPrint('✅ Added ${corridorGeofences.length} corridor geofences to map');
   } catch (e) {
     debugPrint("❌ Error adding corridor geofences: $e");
+  }
+}
+
+/// Creates circle annotations for a list of waypoints and returns the manager.
+Future<CircleAnnotationManager> addWaypointAnnotations(
+  MapboxMap map,
+  List<Waypoint> waypoints, {
+  Color color = Colors.blue,
+  double opacity = 1.0,
+  double radius = 10,
+}) async {
+  final manager = await map.annotations.createCircleAnnotationManager();
+
+  for (final w in waypoints) {
+    final opts = CircleAnnotationOptions(
+      geometry: Point(
+        coordinates: Position(
+          w.lon.toDouble(), // Mapbox Position expects (lng, lat)
+          w.lat.toDouble(),
+        ),
+      ),
+      circleColor: color.toARGB32(),
+      circleOpacity: opacity,
+      circleRadius: radius,
+    );
+    await manager.create(opts);
+  }
+
+  return manager;
+}
+
+/// Convenience helper to draw a single waypoint annotation.
+Future<CircleAnnotationManager> addWaypointAnnotation(
+  MapboxMap map,
+  Waypoint waypoint, {
+  Color color = Colors.blue,
+  double opacity = 1.0,
+  double radius = 10,
+}) {
+  return addWaypointAnnotations(
+    map,
+    [waypoint],
+    color: color,
+    opacity: opacity,
+    radius: radius,
+  );
+}
+
+/// Add user recorded trail line to the map
+Future<void> addUserTrailLine(
+  MapboxMap mapboxMapController,
+  List<Point> trailPoints,
+) async {
+  try {
+    // Remove existing user trail if it exists
+    try {
+      await mapboxMapController.style.removeStyleLayer("user_trail_layer");
+      await mapboxMapController.style.removeStyleSource("user_trail_source");
+    } catch (_) {
+      // Safe to ignore if not found
+    }
+
+    if (trailPoints.isEmpty) return;
+
+    final lineString = LineString(
+      coordinates: trailPoints.map((p) => p.coordinates).toList(),
+    );
+    final feature = Feature(geometry: lineString, id: "user_trail_line");
+    final featureCollection = FeatureCollection(features: [feature]);
+
+    await mapboxMapController.style.addSource(
+      GeoJsonSource(id: "user_trail_source", data: jsonEncode(featureCollection.toJson())),
+    );
+
+    await mapboxMapController.style.addLayer(
+      LineLayer(
+        slot: LayerSlot.MIDDLE,
+        id: "user_trail_layer",
+        sourceId: "user_trail_source",
+        lineColor: Colors.blue.toARGB32(), // Blue for user recorded trail
+        lineBorderColor: Colors.blue.shade900.toARGB32(),
+        lineJoin: LineJoin.ROUND,
+        lineCap: LineCap.ROUND,
+        lineWidth: 5.0,
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint("Error in addUserTrailLine: $e");
+    debugPrintStack(stackTrace: stack);
   }
 }
