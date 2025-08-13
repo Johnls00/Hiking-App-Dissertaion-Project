@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:hiking_app/models/trail_geofence.dart';
 import 'package:hiking_app/models/route.dart';
-import 'package:hiking_app/providers/trail_geofence_service.dart';
+import 'package:hiking_app/services/trail_geofence_service.dart';
 import 'package:hiking_app/utilities/geofence_utils.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -12,17 +12,21 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
   late final TrailGeofenceService _geofenceService;
   final List<TrailGeofence> _activeGeofences = [];
 
-  final double defaultRadius = 20.0;
-  final double defaultIntervalDistance = 40.0; // meters
-  final double minStartEndDistance = 100.0; // Minimum distance between start/end for separate geofences
-  final Duration minTrailTime = Duration(minutes: 2); // Minimum time before end can be triggered
-  
+  // Optimized settings for faster response
+  final double defaultRadius = 15.0; // Slightly smaller for quicker entry/exit
+  final double defaultIntervalDistance = 25.0; // Closer geofences for better coverage
+  final double minStartEndDistance = 80.0; // Reduced distance threshold
+  final Duration minTrailTime = Duration(seconds: 30); // Faster minimum time
+
   // Trail progress tracking
   bool _trailStarted = false;
   DateTime? _trailStartTime;
   int _checkpointsReached = 0;
   double _estimatedProgress = 0.0; // 0.0 to 1.0
   bool _allowEndCompletion = false;
+
+  // Add trail status tracking
+  bool _isCurrentlyOnTrail = true; // Track current trail status
 
   @override
   void initState() {
@@ -45,15 +49,160 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            isOnTrail
-                ? "✅ On Trail"
-                : "⚠️ You're off the trail!",
+            isOnTrail ? "✅ On Trail" : "⚠️ You're off the trail!",
             style: TextStyle(color: Colors.white, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         );
       },
     );
+  }
+
+  /// Build trail progress bar widget
+  Widget buildTrailProgressWidget() {
+    return Container(
+      padding: EdgeInsets.all(10),
+      margin: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          // BoxShadow(
+          //   color: Colors.black.withOpacity(0.1),
+          //   blurRadius: 4,
+          //   offset: Offset(0, 0),
+          // ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Progress header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Trail Progress',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              Text(
+                '${(_estimatedProgress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _estimatedProgress > 0.8 ? Colors.green : Colors.blue,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 12),
+
+          // Progress bar
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: _estimatedProgress.clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blue,
+                      _estimatedProgress > 0.5 ? Colors.green : Colors.blue,
+                      if (_estimatedProgress > 0.8) Colors.green[700]!,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+
+          SizedBox(height: 8),
+
+          // Progress details
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (_trailStarted) ...[
+
+                Row(
+                  children: [
+                    Icon(
+                      _estimatedProgress > 0.9
+                          ? Icons.flag
+                          : _estimatedProgress > 0.5
+                          ? Icons.directions_walk
+                          : Icons.play_arrow,
+                      size: 16,
+                      color: _estimatedProgress > 0.9
+                          ? Colors.green
+                          : Colors.blue,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      _estimatedProgress > 0.9
+                          ? 'Almost there!'
+                          : _estimatedProgress > 0.5
+                          ? 'Making good progress'
+                          : 'Trail started',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _estimatedProgress > 0.9
+                            ? Colors.green
+                            : Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Icon(Icons.not_started, size: 16, color: Colors.grey[600]),
+                    SizedBox(width: 4),
+                    Text(
+                      'Trail not started',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+              Text(
+                'Checkpoints: $_checkpointsReached',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+
+          // Trail status indicator
+        ],
+      ),
+    );
+  }
+
+  /// Format elapsed time since trail start
+  String _formatElapsedTime() {
+    if (_trailStartTime == null) return '0:00';
+
+    final elapsed = DateTime.now().difference(_trailStartTime!);
+    final hours = elapsed.inHours;
+    final minutes = elapsed.inMinutes % 60;
+
+    if (hours > 0) {
+      return '${hours}:${minutes.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
+    }
   }
 
   /// Determine if user is currently on the trail
@@ -64,27 +213,28 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
     // Get currently active geofences
     final activeGeofences = _geofenceService.getActiveGeofenceObjects();
-    
+
     // Check if user is in any corridor geofences (these represent the trail path)
     final inCorridorGeofence = activeGeofences.any(
-      (geofence) => geofence.type == GeofenceType.corridor
+      (geofence) => geofence.type == GeofenceType.corridor,
     );
-    
+
     if (inCorridorGeofence) {
       return true; // User is in trail corridor
     }
-    
+
     // If no corridor geofences but user is in start/waypoint/checkpoint geofences, consider on-trail
     final inTrailRelatedGeofence = activeGeofences.any(
-      (geofence) => geofence.type == GeofenceType.trailStart ||
-                   geofence.type == GeofenceType.waypoint ||
-                   geofence.type == GeofenceType.checkpoint
+      (geofence) =>
+          geofence.type == GeofenceType.trailStart ||
+          geofence.type == GeofenceType.waypoint ||
+          geofence.type == GeofenceType.checkpoint,
     );
-    
+
     if (inTrailRelatedGeofence) {
       return true; // User is at trail point
     }
-    
+
     // If user just started and hasn't moved much, consider on-trail
     if (_trailStarted && _trailStartTime != null) {
       final timeSinceStart = DateTime.now().difference(_trailStartTime!);
@@ -92,11 +242,11 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
         return true; // Grace period after starting
       }
     }
-    
+
     return false; // User is off trail
   }
 
-  /// Setup geofencing for a trail route
+  /// Setup geofencing for a trail route with optimized settings
   Future<void> setupTrailGeofencing(
     TrailRoute route,
     MapboxMap mapController,
@@ -117,14 +267,13 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
           )
           .toList();
 
-      // 1. Create corridor geofences along the trail path
+      // 1. Create corridor geofences with optimized spacing
       _geofenceService.addTrailCorridorGeofences(
         'corridor_${route.name.toLowerCase().replaceAll(' ', '_')}',
         '${route.name} Corridor',
         trailPoints,
-        corridorWidth: defaultRadius, // 20m wide corridor
-        segmentDistance:
-            defaultIntervalDistance, // Geofence every 40m for good overlap
+        corridorWidth: defaultRadius, // 15m wide corridor
+        segmentDistance: defaultIntervalDistance, // Geofence every 25m for better coverage
       );
 
       // 2. Generate geofences from waypoints
@@ -151,7 +300,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
             startPoint.coordinates.lat.toDouble(),
             startPoint.coordinates.lng.toDouble(),
           ),
-          radius: defaultRadius * 2,
+          radius: defaultRadius * 1,
           description: 'Starting point of ${route.name}',
           type: GeofenceType.trailStart,
         );
@@ -163,7 +312,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
             endPoint.coordinates.lat.toDouble(),
             endPoint.coordinates.lng.toDouble(),
           ),
-          radius: defaultRadius * 2,
+          radius: defaultRadius * 1,
           description: 'End point of ${route.name}',
           type: GeofenceType.trailEnd,
         );
@@ -189,53 +338,114 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
+  /// Update trail status and trigger UI refresh if status changed
+  void _updateTrailStatusIfChanged() {
+    final newTrailStatus = _isUserOnTrail();
+    if (newTrailStatus != _isCurrentlyOnTrail) {
+      if (mounted) {
+        setState(() {
+          _isCurrentlyOnTrail = newTrailStatus;
+        });
+        
+        // Log status change
+        debugPrint('Trail status changed: ${_isCurrentlyOnTrail ? "ON TRAIL" : "OFF TRAIL"}');
+        
+        // Force immediate UI rebuild
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
+        
+        // Optional: Show status change notification
+        // _showTrailStatusChangeNotification(_isCurrentlyOnTrail);
+      }
+    }
+  }
+
   /// Listen to geofence events
   void _setupGeofenceEventListening() {
     _geofenceService.eventStream.listen((event) {
       _handleGeofenceEvent(event);
     });
+    
+    // Also listen to service changes for immediate UI updates
+    _geofenceService.addListener(_onGeofenceServiceChanged);
+  }
+
+  /// Handle geofence service changes for immediate UI updates
+  void _onGeofenceServiceChanged() {
+    if (mounted) {
+      // Check if trail status changed and update immediately
+      _updateTrailStatusIfChanged();
+    }
   }
 
   /// Handle geofence enter/exit events
   void _handleGeofenceEvent(GeofenceEvent event) {
-    final message = GeofenceUtils.getNotificationMessage(event);
-    final isEntering = event.eventType == GeofenceEventType.enter;
+    // final message = GeofenceUtils.getNotificationMessage(event);
+    // final isEntering = event.eventType == GeofenceEventType.enter;
 
     // Show notification only if message is not empty (skip corridor geofences)
-    if (message.isNotEmpty) {
-      _showGeofenceNotification(message, isEntering);
-    }
+    // if (message.isNotEmpty) {
+    //   _showGeofenceNotification(message, isEntering);
+    // }
 
     // Update progress tracking
     _updateTrailProgress(event);
+
+    // Check if trail status changed and update UI
+    _updateTrailStatusIfChanged();
 
     // Log event for analytics
     _logGeofenceEvent(event);
   }
 
-  /// Show geofence notification to user
-  void _showGeofenceNotification(String message, bool isEntering) {
-    if (!mounted) return;
+  /// Show notification when trail status changes
+  // void _showTrailStatusChangeNotification(bool isOnTrail) {
+  //   if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isEntering ? Icons.location_on : Icons.location_off,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: isEntering ? Colors.green : Colors.orange,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Row(
+  //         children: [
+  //           Icon(
+  //             isOnTrail ? Icons.check_circle : Icons.warning,
+  //             color: Colors.white,
+  //             size: 15,
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Text(isOnTrail ? "Back on trail!" : "You've left the trail"),
+  //         ],
+  //       ),
+  //       backgroundColor: isOnTrail ? Colors.green : Colors.orange,
+  //       duration: const Duration(seconds: 3),
+  //       behavior: SnackBarBehavior.floating,
+  //     ),
+  //   );
+  // }
+
+  /// Show geofence notification to user
+  // void _showGeofenceNotification(String message, bool isEntering) {
+  //   if (!mounted) return;
+
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Row(
+  //         children: [
+  //           Icon(
+  //             isEntering ? Icons.location_on : Icons.location_off,
+  //             color: Colors.white,
+  //             size: 20,
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Expanded(child: Text(message)),
+  //         ],
+  //       ),
+  //       backgroundColor: isEntering ? Colors.green : Colors.orange,
+  //       duration: const Duration(seconds: 4),
+  //       behavior: SnackBarBehavior.floating,
+  //     ),
+  //   );
+  // }
 
   /// Update trail progress based on geofence events
   void _updateTrailProgress(GeofenceEvent event) {
@@ -271,11 +481,14 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
     // Update estimated progress based on geofence types
     final totalProgressGeofences = _activeGeofences
-        .where((g) => g.type == GeofenceType.checkpoint || 
-                     g.type == GeofenceType.waypoint ||
-                     g.type == GeofenceType.corridor)
+        .where(
+          (g) =>
+              g.type == GeofenceType.checkpoint ||
+              g.type == GeofenceType.waypoint ||
+              g.type == GeofenceType.corridor,
+        )
         .length;
-    
+
     if (totalProgressGeofences > 0) {
       _estimatedProgress = _checkpointsReached / totalProgressGeofences;
     }
@@ -286,7 +499,9 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
       debugPrint('Trail progress sufficient - end completion now allowed');
     }
 
-    debugPrint('Progress: ${(_estimatedProgress * 100).toStringAsFixed(1)}% ($_checkpointsReached/$totalProgressGeofences)');
+    debugPrint(
+      'Progress: ${(_estimatedProgress * 100).toStringAsFixed(1)}% ($_checkpointsReached/$totalProgressGeofences)',
+    );
   }
 
   /// Called when hiker completes the trail
@@ -325,8 +540,6 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     debugPrint('Geofence Event: ${event.toString()}');
   }
 
- 
-
   /// Show error message
   void _showError(String message) {
     if (!mounted) return;
@@ -352,6 +565,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
   @override
   void dispose() {
+    _geofenceService.removeListener(_onGeofenceServiceChanged);
     try {
       _geofenceService.stopMonitoring().catchError((error) {
         debugPrint('Error stopping geofencing in dispose: $error');
@@ -369,23 +583,31 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     final lng1 = point1.coordinates.lng.toDouble();
     final lat2 = point2.coordinates.lat.toDouble();
     final lng2 = point2.coordinates.lng.toDouble();
-    
+
     return _haversineDistance(lat1, lng1, lat2, lng2);
   }
 
   /// Haversine distance calculation in meters
-  double _haversineDistance(double lat1, double lng1, double lat2, double lng2) {
+  double _haversineDistance(
+    double lat1,
+    double lng1,
+    double lat2,
+    double lng2,
+  ) {
     const double earthRadius = 6371000; // Earth's radius in meters
-    
+
     final dLat = _toRadians(lat2 - lat1);
     final dLng = _toRadians(lng2 - lng1);
-    
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLng / 2) * math.sin(dLng / 2);
-    
+
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+
     final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
+
     return earthRadius * c;
   }
 
@@ -401,6 +623,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     _checkpointsReached = 0;
     _estimatedProgress = 0.0;
     _allowEndCompletion = false;
+    _isCurrentlyOnTrail = true; // Reset to on-trail
     debugPrint('Trail progress tracking reset');
   }
 }
