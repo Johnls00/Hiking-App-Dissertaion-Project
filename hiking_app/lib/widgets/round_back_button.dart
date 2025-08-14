@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 
 class RoundBackButton extends StatelessWidget {
-  const RoundBackButton({super.key});
+  const RoundBackButton({super.key, this.onPressed});
+
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Material(
           color: Colors.transparent,
           shape: const CircleBorder(),
           child: InkWell(
-            onTap: () {
-              Navigator.pop(context);
+            onTap: () async {
+              if (onPressed != null) {
+                onPressed!();
+              } else if (Navigator.canPop(context)) {
+                Navigator.maybePop(context);
+              }
             },
             customBorder: const CircleBorder(),
             child: Ink(

@@ -29,6 +29,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
   List<LatLng> geofenceTrailPoints = [];
 
   final Distance _distance = Distance();
+  bool _isExiting = false;
   bool _isNavigating = false;
 
   Duration _elapsedTime = Duration.zero;
@@ -46,9 +47,12 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
 
   @override
   void dispose() {
+    _isExiting = true;
     _userPositionStream?.cancel();
     _elapsedTimer?.cancel();
-    // GeofencingMixin handles geofence service disposal
+    // GeofencingMixin also disposes, but call directly for safety
+    stopGeofencing().catchError((_) {});
+    circleAnnotationManager = null;
     super.dispose();
   }
 
@@ -70,7 +74,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
         puckBearingEnabled: true,
       ),
     );
-    
+
     // Setup position tracking and geofencing
     await setupPositionTracking(mapboxMapController);
 
@@ -84,18 +88,26 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
   Future<void> _addWaypointMarkers() async {
     try {
       // Don't call deleteAll() - just create a new manager
-      circleAnnotationManager = await mapboxMapController.annotations.createCircleAnnotationManager();
+      circleAnnotationManager = await mapboxMapController.annotations
+          .createCircleAnnotationManager();
 
       // Add waypoint circles
-      for (int waypointIndex = 0; waypointIndex < _trailRoute!.waypoints.length; waypointIndex++) {
+      for (
+        int waypointIndex = 0;
+        waypointIndex < _trailRoute!.waypoints.length;
+        waypointIndex++
+      ) {
         final waypoint = _trailRoute!.waypoints[waypointIndex];
 
-        CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
-          geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)),
-          circleColor: Colors.blue.toARGB32(),
-          circleOpacity: 1,
-          circleRadius: 10,
-        );
+        CircleAnnotationOptions circleAnnotationOptions =
+            CircleAnnotationOptions(
+              geometry: Point(
+                coordinates: Position(waypoint.lon, waypoint.lat),
+              ),
+              circleColor: Colors.blue.toARGB32(),
+              circleOpacity: 1,
+              circleRadius: 10,
+            );
 
         await circleAnnotationManager!.create(circleAnnotationOptions);
       }
@@ -169,13 +181,15 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     _currentElevation = pos.altitude;
 
     // Start tracking position with immediate updates
-    _userPositionStream = geo.Geolocator.getPositionStream(
-      locationSettings: const geo.LocationSettings(
-        accuracy: geo.LocationAccuracy.bestForNavigation,
-        distanceFilter: 0, // Update on any movement
-        timeLimit: Duration(seconds: 1), // Force update every second
-      ),
-    ).listen((position) async {
+    _userPositionStream =
+        geo.Geolocator.getPositionStream(
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.bestForNavigation,
+            distanceFilter: 0, // Update on any movement
+            timeLimit: Duration(seconds: 1), // Force update every second
+          ),
+        ).listen((position) async {
+          if (_isExiting || !mounted) return;
           final LatLng userLocation = LatLng(
             position.latitude,
             position.longitude,
@@ -198,17 +212,16 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
           _currentElevation = position.altitude;
 
           // Force UI update immediately
-          if (mounted) {
-            setState(() {
-              // Trigger immediate rebuild
-            });
-          }
+          // if (mounted) {
+          //   setState(() {
+          //     // Trigger immediate rebuild
+          //   });
+          // }
 
           // Force immediate UI update for trail status
+          if (_isExiting) return;
           if (mounted) {
-            setState(() {
-              // This will rebuild the buildGeofenceStatusWidget
-            });
+            setState(() {});
           }
 
           // Inactivity alert (navigation feature, not geofencing)
@@ -226,6 +239,32 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
             }
           }
         });
+  }
+
+  Future<void> _cleanup() async {
+    if (_isExiting) return;
+    _isExiting = true;
+
+    try {
+      await _userPositionStream?.cancel();
+    } catch (_) {}
+    _userPositionStream = null;
+
+    try {
+      _elapsedTimer?.cancel();
+    } catch (_) {}
+    _elapsedTimer = null;
+
+    try {
+      await stopGeofencing();
+    } catch (e) {
+      debugPrint('Error stopping geofencing during cleanup: $e');
+    }
+
+    try {
+      await circleAnnotationManager?.deleteAll();
+    } catch (_) {}
+    circleAnnotationManager = null;
   }
 
   void _stopTrailNavigation() {
@@ -251,7 +290,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
       // Removed _currentPointIndex reset - no longer using point-to-point navigation
     });
 
-     debugPrint('🛑 Stopped trail navigation and geofence monitoring');
+    debugPrint('🛑 Stopped trail navigation and geofence monitoring');
   }
 
   // Removed _onReachedTrailPoint - geofencing events are now handled by GeofencingMixin
@@ -369,88 +408,107 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
   Widget build(BuildContext context) {
     _trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Map background
-            MapWidget(onMapCreated: _onMapCreated),
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          await _cleanup();
+        } else {
+          await _cleanup();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Map background
+              MapWidget(onMapCreated: _onMapCreated),
 
-            // On/Off Trail Status Banner
-            if (_isNavigating)
-              Positioned(
-                top: 65,
-                left: 120,
-                right: 120,
-                child: buildGeofenceStatusWidget(),
-              ),
+              // On/Off Trail Status Banner
+              if (_isNavigating)
+                Positioned(
+                  top: 65,
+                  left: 120,
+                  right: 120,
+                  child: buildGeofenceStatusWidget(),
+                ),
 
-            // Overlay UI
-            SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        RoundBackButton(),
-                        SizedBox(width: 20),
-                        if (_isNavigating)
-                          Flexible(
-                            flex: 1,
-                            child: Material(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(25),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 166,
-                                  height: 49,
-                                  child: Center(
-                                    child: Text(
-                                      "Following:\n${_trailRoute!.name}",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black,
+              // Overlay UI
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (!_isNavigating)
+                            RoundBackButton(
+                              onPressed: () async {
+                                await _cleanup();
+                                if (context.mounted &&
+                                    Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                            ),
+                            // SizedBox(width: 20),
+                          if (_isNavigating)
+                            Flexible(
+                              flex: 1,
+                              child: Material(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(25),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 166,
+                                    height: 49,
+                                    child: Center(
+                                      child: Text(
+                                        "Following:\n${_trailRoute!.name}",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        SizedBox(width: 69),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Spacer(),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+                          // SizedBox(width: 69),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _isNavigating
-                            ? _buildNavigationStats()
-                            : _buildTrailOverview(),
-                      ],
+                    SizedBox(height: 10),
+                    Spacer(),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _isNavigating
+                              ? _buildNavigationStats()
+                              : _buildTrailOverview(),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
