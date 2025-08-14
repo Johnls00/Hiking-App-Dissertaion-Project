@@ -1,9 +1,11 @@
-import 'package:envied/envied.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-part 'env.g.dart';
-
-@Envied(path: '.env')
-abstract class Env {
-  @EnviedField(varName: 'MAPBOX_ACCESS_KEY', obfuscate: true)
-  static final String mapboxKey = _Env.mapboxKey;
+class Env {
+  static String get mapboxKey {
+    final token = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
+    if (token.isEmpty) {
+      print('⚠️ Warning: MAPBOX_ACCESS_TOKEN not found in .env file');
+    }
+    return token;
+  }
 }

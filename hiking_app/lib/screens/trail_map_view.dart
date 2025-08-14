@@ -2,14 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:hiking_app/models/route.dart';
-import 'package:hiking_app/utilities/geofencing_mixin.dart' hide debugPrint;
-import 'package:hiking_app/utilities/maping_utils.dart';
+import 'package:hiking_app/utilities/geofencing_mixin.dart';
+import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
 import 'package:hiking_app/utilities/user_location_tracker.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     hide LocationSettings;
 import 'package:latlong2/latlong.dart';
-import 'package:hiking_app/utilities/maping_utils.dart' as MapUtils;
 
 class TrailMapViewScreen extends StatefulWidget {
   const TrailMapViewScreen({super.key});
@@ -18,10 +17,11 @@ class TrailMapViewScreen extends StatefulWidget {
   State<TrailMapViewScreen> createState() => _TrailMapViewScreenState();
 }
 
-StreamSubscription<geo.Position>? _userPositionStream;
+
 
 class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     with GeofencingMixin {
+  StreamSubscription<geo.Position>? _userPositionStream; // <-- outside the class
   TrailRoute? _trailRoute;
   late MapboxMap mapboxMapController;
   CircleAnnotationManager? circleAnnotationManager;
@@ -75,11 +75,12 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
       ),
     );
 
-    // Setup position tracking and geofencing
-    await setupPositionTracking(mapboxMapController);
+    // Setup position tracking and geofencing with a small delay
+    await Future.delayed(const Duration(milliseconds: 200));
+    await setupPositionTracking(mapboxMapController, isDisposed: () => _isExiting);
 
     // Draw the trail line on the map
-    await addTrailLine(mapboxMapController, _trailRoute!.trackpoints);
+    await map_utils.addTrailLine(mapboxMapController, _trailRoute!.trackpoints);
 
     // Add waypoint markers safely
     await _addWaypointMarkers();
@@ -242,30 +243,34 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
   }
 
   Future<void> _cleanup() async {
-    if (_isExiting) return;
-    _isExiting = true;
+  if (_isExiting) return;
+  _isExiting = true;
 
-    try {
-      await _userPositionStream?.cancel();
-    } catch (_) {}
-    _userPositionStream = null;
+  try { await _userPositionStream?.cancel(); } catch (_) {}
+  _userPositionStream = null;
 
-    try {
-      _elapsedTimer?.cancel();
-    } catch (_) {}
-    _elapsedTimer = null;
+  try { _elapsedTimer?.cancel(); } catch (_) {}
+  _elapsedTimer = null;
 
-    try {
-      await stopGeofencing();
-    } catch (e) {
-      debugPrint('Error stopping geofencing during cleanup: $e');
-    }
+  try { await stopGeofencing(); } catch (e) { debugPrint('Error stopping geofencing during cleanup: $e'); }
 
-    try {
-      await circleAnnotationManager?.deleteAll();
-    } catch (_) {}
-    circleAnnotationManager = null;
-  }
+  // Turn off Mapbox location component & following
+  try {
+    await mapboxMapController.location.updateSettings(
+      LocationComponentSettings(
+        enabled: false,
+        pulsingEnabled: false,
+        puckBearingEnabled: false,
+        // If you used follow-puck parameters, also null/disable them:
+        // puckBearing: null,
+        // puckBearingSource: null,
+      ),
+    );
+  } catch (_) {}
+
+  await map_utils.safelyCleanupAnnotationManager(circleAnnotationManager);
+  circleAnnotationManager = null;
+}
 
   void _stopTrailNavigation() {
     _userPositionStream?.cancel();
@@ -423,7 +428,10 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
           child: Stack(
             children: [
               // Map background
-              MapWidget(onMapCreated: _onMapCreated),
+              MapWidget(
+                key: ValueKey('trail-map-${_trailRoute?.name ?? UniqueKey()}'),
+                onMapCreated: _onMapCreated,
+              ),
 
               // On/Off Trail Status Banner
               if (_isNavigating)

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:hiking_app/models/trail_geofence.dart';
-import 'package:hiking_app/providers/trail_geofence_service.dart';
+import 'package:hiking_app/services/trail_geofence_service.dart';
 import 'package:hiking_app/utilities/maping_utils.dart';
 
 class GeofenceMapScreen extends StatefulWidget {
@@ -110,7 +110,8 @@ class _GeofenceMapScreenState extends State<GeofenceMapScreen> {
     // Add geofence visualizations to map
     await _addGeofencesToMap();
     
-    // Set camera to show all geofences
+    // Set camera to show all geofences with a small delay
+    await Future.delayed(const Duration(milliseconds: 200));
     await _setCameraToShowAllGeofences();
   }
 

@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:latlong2/latlong.dart';
 import 'package:hiking_app/models/trail_geofence.dart';
 import 'package:hiking_app/models/waypoint.dart';
-import 'package:hiking_app/providers/trail_geofence_service.dart';
+import 'package:hiking_app/services/trail_geofence_service.dart';
 
 /// Utility functions for working with geofences
 class GeofenceUtils {

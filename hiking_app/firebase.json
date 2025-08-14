@@ -1,0 +1,45 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "hikingapp-5d14c",
+          "appId": "1:546752967629:android:751dcd9e59e159238b8a84",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "hikingapp-5d14c",
+          "appId": "1:546752967629:ios:9db7461a00aab92f8b8a84",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "hikingapp-5d14c",
+          "configurations": {
+            "android": "1:546752967629:android:751dcd9e59e159238b8a84",
+            "ios": "1:546752967629:ios:9db7461a00aab92f8b8a84",
+            "web": "1:546752967629:web:5ec8b91b9866323d8b8a84"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "venv",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "runtime": "python313"
+    }
+  ]
+}

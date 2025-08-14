@@ -120,7 +120,7 @@ Future<void> cameraBoundsFromPoints(
     maxZoom,
     offset,
   );
-  await mapboxMapController.setCamera(camera);
+  await safelySetCamera(mapboxMapController, camera);
 }
 
 // adds a straight line between two points on the map
@@ -522,5 +522,32 @@ Future<void> addUserTrailLine(
   } catch (e, stack) {
     debugPrint("Error in addUserTrailLine: $e");
     debugPrintStack(stackTrace: stack);
+  }
+}
+
+/// Safely clean up circle annotation manager
+Future<void> safelyCleanupAnnotationManager(CircleAnnotationManager? manager) async {
+  if (manager != null) {
+    try {
+      await manager.deleteAll();
+      debugPrint("Successfully cleaned up annotation manager");
+    } catch (e) {
+      debugPrint("Error cleaning up annotation manager: $e");
+      // Platform channel errors are common during cleanup, don't rethrow
+    }
+  }
+}
+
+/// Safely set camera with error handling
+Future<void> safelySetCamera(MapboxMap mapController, CameraOptions cameraOptions) async {
+  try {
+    // Add a small delay to ensure map is fully initialized
+    await Future.delayed(const Duration(milliseconds: 100));
+    await mapController.setCamera(cameraOptions);
+    debugPrint("Successfully set camera");
+  } catch (e) {
+    debugPrint("Error setting camera: $e");
+    // Platform channel errors can occur during initialization or disposal
+    // Don't rethrow to prevent app crashes
   }
 }

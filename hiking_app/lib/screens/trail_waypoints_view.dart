@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hiking_app/models/route.dart';
-import 'package:hiking_app/utilities/maping_utils.dart';
+import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class TrailWaypointsScreen extends StatefulWidget {
-
-  
-
   const TrailWaypointsScreen({super.key});
 
   @override
@@ -20,21 +17,25 @@ late MapboxMap mapboxMapController;
 CircleAnnotationManager? circleAnnotationManager;
 
 class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
-  
   @override
   void initState() {
     super.initState();
     waypointIndex = 0;
   }
+
+  @override
+  void dispose() {
+    // Clean up annotation manager if it exists
+    circleAnnotationManager = null;
+    super.dispose();
+  }
+
   void _onMapCreated(MapboxMap controller) async {
     mapboxMapController = controller;
     await mapboxMapController.loadStyleURI(MapboxStyles.OUTDOORS);
 
-    circleAnnotationManager = await mapboxMapController.annotations
-        .createCircleAnnotationManager();
-
-
-    await circleAnnotationManager?.deleteAll();
+    // Clean up existing annotations safely
+    await map_utils.safelyCleanupAnnotationManager(circleAnnotationManager);
 
     if (!mounted) return;
 
@@ -43,16 +44,12 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
           ModalRoute.of(context)!.settings.arguments as TrailRoute;
       final waypoint = trailRoute.waypoints[waypointIndex];
 
-      await addTrailLine(mapboxMapController, trailRoute.trackpoints);
+      await map_utils.addTrailLine(mapboxMapController, trailRoute.trackpoints);
 
-      CircleAnnotationOptions circleAnnotationOptions = CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(waypoint.lon, waypoint.lat)),
-        circleColor: Colors.blue.toARGB32(),
-        circleOpacity: 1,
-        circleRadius: 10,
+      circleAnnotationManager = await map_utils.addWaypointAnnotation(
+        mapboxMapController,
+        waypoint,
       );
-
-      circleAnnotationManager?.create(circleAnnotationOptions);
     } catch (e, stack) {
       debugPrint("Error in _onMapCreated: $e");
       debugPrintStack(stackTrace: stack);

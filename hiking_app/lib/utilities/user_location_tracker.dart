@@ -4,10 +4,11 @@ import 'dart:async';
 
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
 
 StreamSubscription? userPositionStream;
 
-Future<void> setupPositionTracking(MapboxMap mapController) async {
+Future<void> setupPositionTracking(MapboxMap mapController, {bool Function()? isDisposed}) async {
   bool serviceEnabled;
   geo.LocationPermission permission;
 
@@ -40,8 +41,9 @@ Future<void> setupPositionTracking(MapboxMap mapController) async {
       geo.Geolocator.getPositionStream(
         locationSettings: locationSettings,
       ).listen((geo.Position? position) {
-        if (position != null) {
-          mapController.setCamera(
+        if (position != null && (isDisposed == null || !isDisposed())) {
+          map_utils.safelySetCamera(
+            mapController,
             CameraOptions(
               center: Point(
                 coordinates: Position(position.longitude, position.latitude),
