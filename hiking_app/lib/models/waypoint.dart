@@ -18,8 +18,6 @@ class Waypoint {
     required this.ele,
   }) : description = description ?? 'No description provided';
 
-  
-
   String returnName(){
     return name;
   }
@@ -28,11 +26,11 @@ class Waypoint {
     return lat;
   }
 
-   double returnLon() {
+  double returnLon() {
     return lon;
   }
 
-   double returnEle() {
+  double returnEle() {
     return ele;
   }
   
