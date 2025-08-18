@@ -27,7 +27,7 @@ class RoundBackButton extends StatelessWidget {
               width: 49,
               height: 49,
               decoration: const ShapeDecoration(
-                color: Color.fromRGBO(221, 221, 221, 1),
+                color: Colors.white,
                 shape: CircleBorder(),
               ),
               child: const Icon(Icons.arrow_back),
