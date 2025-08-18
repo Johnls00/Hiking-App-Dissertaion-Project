@@ -11,6 +11,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
 
+  final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -18,32 +21,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = true;
 
   Future<void> signInWithEmailAndPassword() async {
+    setState(() {
+      _errorMessage = '';
+    });
     try {
       await Auth().signInWithEmailAndPassword(
-        email : _emailController.text,
-        password: _passwordController.text,
+        email : _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
+      if (!mounted) return;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message;
       });
     }
   }
-
-Future<void> createUserWithEmailAndPassword() async {
-    try {
-      await Auth().createUserWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
-    }
-  }
-
-
 
   @override
   void dispose() {
@@ -73,6 +69,7 @@ Future<void> createUserWithEmailAndPassword() async {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 30),
             child: Form(
+              key: _formKey,
               child: Column(
                 children: [
                   Padding(
@@ -89,7 +86,7 @@ Future<void> createUserWithEmailAndPassword() async {
                       onChanged: (String value) {},
                       validator: (value) {
                         return value!.isEmpty
-                            ? 'Please a valid email.'
+                            ? 'Please enter a valid email.'
                             : null;
                       },
                     ),
@@ -121,31 +118,41 @@ Future<void> createUserWithEmailAndPassword() async {
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: MaterialButton(
                       minWidth: double.infinity,
-                      onPressed: () async {
-                        await signInWithEmailAndPassword();
-                        if (!mounted) return;
-                        if (_errorMessage != null && _errorMessage!.isNotEmpty) {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text("Login Failed"),
-                                content: Text(_errorMessage ?? 'Sorry an error occurred.'),
-                                actions: [
-                                  TextButton(
-                                    child: const Text("OK"),
-                                    onPressed: () => Navigator.of(context).pop(),
-                                  ),
-                                ],
-                              );
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                              if (!_formKey.currentState!.validate()) return;
+                              setState(() => _isSubmitting = true);
+                              await signInWithEmailAndPassword();
+                              if (!mounted) return;
+                              if (_errorMessage != null && _errorMessage!.isNotEmpty) {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text('Login Failed'),
+                                      content: Text(_errorMessage ?? 'Sorry an error occurred.'),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('OK'),
+                                          onPressed: () => Navigator.of(context).pop(),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
+                              setState(() => _isSubmitting = false);
                             },
-                          );
-                        }
-                        // On success, StreamBuilder in WidgetTree will show the home screen.
-                      },
                       color: const Color.fromRGBO(75, 57, 239, 1),
                       textColor: Colors.white,
-                      child: const Text('Login'),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Login'),
                     ),
                   ),
                   const Text("or"),
@@ -154,8 +161,9 @@ Future<void> createUserWithEmailAndPassword() async {
                     child: MaterialButton(
                       minWidth: double.infinity,
                       onPressed: () async {
-                        await createUserWithEmailAndPassword();
-                        if (!mounted) return;
+                        Navigator.pushReplacementNamed(context, '/register');
+                        // await createUserWithEmailAndPassword();
+                        // if (!mounted) return;
                         if (_errorMessage != null && _errorMessage!.isNotEmpty) {
                           showDialog(
                             context: context,
