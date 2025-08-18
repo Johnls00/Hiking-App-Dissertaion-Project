@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gpx/gpx.dart';
-import 'package:hiking_app/models/route.dart';
-import 'package:hiking_app/utilities/gpx_file_util.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hiking_app/auth.dart';
+import 'package:hiking_app/models/trail.dart';
+import 'package:hiking_app/models/waypoint.dart';
 import 'package:hiking_app/widgets/navigation_bar_bottom_main.dart';
 import 'package:hiking_app/widgets/trail_card.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class TrailBrowserScreen extends StatefulWidget {
   const TrailBrowserScreen({super.key});
@@ -13,12 +16,15 @@ class TrailBrowserScreen extends StatefulWidget {
 }
 
 class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
-  TrailRoute? campSiteRoute;
-  TrailRoute? mourneWayRoute;
-  TrailRoute? libraryRoute;
-  TrailRoute? lawrenceRoute;
-  TrailRoute? sanFranRoute;
-  TrailRoute? myRecordingRoute;
+  final User? user = Auth().currentUser;
+  List<Trail> trails = <Trail>[];
+
+  // Trail? campSiteRoute;
+  // Trail? mourneWayRoute;
+  // Trail? libraryRoute;
+  // Trail? lawrenceRoute;
+  // Trail? sanFranRoute;
+  // Trail? myRecordingRoute;
   String? errorMessage;
   bool isLoading = true;
 
@@ -35,98 +41,184 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
     });
 
     try {
-      // 1) Read all GPX assets in parallel
-      final gpxList = await Future.wait<Gpx>([
-        GpxFileUtil.readGpxAsset('assets/park_route.gpx'), // rostrevorCampSite
-        GpxFileUtil.readGpxAsset('assets/mourne_way.gpx'), // mourneWay
-        GpxFileUtil.readGpxAsset('assets/library.gpx'), // library
-        GpxFileUtil.readGpxAsset('assets/lawrence street loop.gpx'), // lawrence
-        GpxFileUtil.readGpxAsset('assets/san_fran_test.gpx'),
-        GpxFileUtil.readGpxAsset('assets/my_recording.gpx'), // sanFranTest
-      ]);
+      // Load all trails from Firestore
+      final query = await FirebaseFirestore.instance
+          .collection('trails')
+          .orderBy('created_at', descending: true)
+          .get();
 
-      final rostrevorCampSite = gpxList[0];
-      final mourneWay = gpxList[1];
-      final library = gpxList[2];
-      final lawrence = gpxList[3];
-      final sanFranTest = gpxList[4];
-      final myRecording = gpxList[5];
+      final loadedTrails = <Trail>[];
 
-      // 2) Build TrailRoute objects (uses snapped waypoints, distance+elev, Naismith, difficulty)
-      final campSite = GpxFileUtil.buildTrailRouteFromGpx(
-        rostrevorCampSite,
-        name: rostrevorCampSite.metadata?.name ?? '',
-        location: 'Rostrevor',
-        description: rostrevorCampSite.metadata?.desc ?? '',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
+      for (var doc in query.docs) {
+        final data = doc.data();
+        
+        debugPrint("📄 Processing trail: ${doc.id}");
+        debugPrint("📊 Raw data types: image_path=${data['image_path'].runtimeType}, waypoints=${data['waypoints'].runtimeType}, trackpoints=${data['trackpoints'].runtimeType}");
+        
+        // Parse images
+        List<String> images = [];
+        if (data['image_path'] != null) {
+          if (data['image_path'] is List) {
+            images = List<String>.from(data['image_path']);
+          } else if (data['image_path'] is String) {
+            images = [data['image_path']];
+          }
+        }
 
-      final mourne = GpxFileUtil.buildTrailRouteFromGpx(
-        mourneWay,
-        name: mourneWay.metadata?.name ?? '',
-        location: 'Mourne Mountains',
-        description: mourneWay.metadata?.desc ?? '',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
+        // Parse waypoints
+        List<Waypoint> waypoints = [];
+        if (data['waypoints'] != null && data['waypoints'] is List) {
+          for (var w in data['waypoints']) {
+            if (w is Map<String, dynamic>) {
+              waypoints.add(Waypoint(
+                lat: w['lat']?.toDouble() ?? 0.0,
+                lon: w['lon']?.toDouble() ?? 0.0,
+                ele: w['ele']?.toDouble() ?? 0.0,
+                name: w['name'] ?? '',
+                distanceFromStart: w['distance_from_start_m']?.toDouble() ?? 0.0,
+              ));
+            }
+          }
+        }
 
-      final libraryTrail = GpxFileUtil.buildTrailRouteFromGpx(
-        library,
-        name: library.metadata?.name ?? '',
-        location: 'Belfast',
-        description: library.metadata?.desc ?? '',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
+        // Parse trackpoints
+        List<Point> trackpoints = [];
+        if (data['trackpoints'] != null && data['trackpoints'] is List) {
+          for (var tp in data['trackpoints']) {
+            if (tp is Map<String, dynamic>) {
+              trackpoints.add(Point(
+                coordinates: Position(
+                  tp['lon']?.toDouble() ?? 0.0,
+                  tp['lat']?.toDouble() ?? 0.0,
+                ),
+              ));
+            }
+          }
+        }
 
-      final lawrenceTrail = GpxFileUtil.buildTrailRouteFromGpx(
-        lawrence,
-        name: lawrence.metadata?.name ?? '',
-        location: 'Belfast',
-        description: lawrence.metadata?.desc ?? '',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
+        // Create Trail object with proper parameter mapping
+        try {
+          final trail = Trail(
+            doc.id,
+            data['display_name'] ?? data['name'] ?? 'Untitled',
+            data['location'] ?? '',
+            Duration(minutes: data['time_to_complete_m'] ?? 0),
+            (data['track_length_m'] ?? 0).toDouble(),
+            (data['elevation_gain_m'] ?? 0).toDouble(),
+            data['difficulty'] ?? '',
+            data['description'] ?? '',
+            images,
+            waypoints,
+            trackpoints,
+          );
 
-      final sanFran = GpxFileUtil.buildTrailRouteFromGpx(
-        sanFranTest,
-        name: sanFranTest.metadata?.name ?? '',
-        location: 'San Francisco',
-        description: sanFranTest.metadata?.desc ?? '',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
-
-      final myRecordingFile = GpxFileUtil.buildTrailRouteFromGpx(
-        myRecording,
-        name: myRecording.metadata?.name ?? 'My Recording',
-        location: 'Local Area',
-        description: myRecording.metadata?.desc ?? 'Recorded trail',
-        images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
-        walkingSpeedKmh: 5.1,
-      );
+          loadedTrails.add(trail);
+          debugPrint("✅ Successfully created trail: ${trail.name}");
+        } catch (e) {
+          debugPrint("❌ Error creating trail for doc ${doc.id}: $e");
+          debugPrint("📋 Data was: $data");
+        }
+      }
 
       if (!mounted) return;
       setState(() {
-        campSiteRoute = campSite;
-        mourneWayRoute = mourne;
-        libraryRoute = libraryTrail;
-        lawrenceRoute = lawrenceTrail;
-        sanFranRoute = sanFran;
-        myRecordingRoute = myRecordingFile;
+        trails = loadedTrails;
         isLoading = false;
       });
+        
     } catch (e) {
-      debugPrint("❌ Error loading trails: $e");
       if (!mounted) return;
       setState(() {
-        errorMessage = "Failed to load trails. Please try again.";
+        errorMessage = 'Error loading trails: $e';
         isLoading = false;
       });
     }
   }
 
+  @override
+    //     GpxFileUtil.readGpxAsset('assets/library.gpx'), // library
+    //     GpxFileUtil.readGpxAsset('assets/lawrence street loop.gpx'), // lawrence
+    //     GpxFileUtil.readGpxAsset('assets/san_fran_test.gpx'),
+    //     GpxFileUtil.readGpxAsset('assets/my_recording.gpx'), // sanFranTest
+    //   ]);
+
+    //   final rostrevorCampSite = gpxList[0];
+    //   final mourneWay = gpxList[1];
+    //   final library = gpxList[2];
+    //   final lawrence = gpxList[3];
+    //   final sanFranTest = gpxList[4];
+    //   final myRecording = gpxList[5];
+
+    //   // 2) Build TrailRoute objects (uses snapped waypoints, distance+elev, Naismith, difficulty)
+    //   final campSite = GpxFileUtil.buildTrailRouteFromGpx(
+    //     rostrevorCampSite,
+    //     name: rostrevorCampSite.metadata?.name ?? '',
+    //     location: 'Rostrevor',
+    //     description: rostrevorCampSite.metadata?.desc ?? '',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   final mourne = GpxFileUtil.buildTrailRouteFromGpx(
+    //     mourneWay,
+    //     name: mourneWay.metadata?.name ?? '',
+    //     location: 'Mourne Mountains',
+    //     description: mourneWay.metadata?.desc ?? '',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   final libraryTrail = GpxFileUtil.buildTrailRouteFromGpx(
+    //     library,
+    //     name: library.metadata?.name ?? '',
+    //     location: 'Belfast',
+    //     description: library.metadata?.desc ?? '',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   final lawrenceTrail = GpxFileUtil.buildTrailRouteFromGpx(
+    //     lawrence,
+    //     name: lawrence.metadata?.name ?? '',
+    //     location: 'Belfast',
+    //     description: lawrence.metadata?.desc ?? '',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   final sanFran = GpxFileUtil.buildTrailRouteFromGpx(
+    //     sanFranTest,
+    //     name: sanFranTest.metadata?.name ?? '',
+    //     location: 'San Francisco',
+    //     description: sanFranTest.metadata?.desc ?? '',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   final myRecordingFile = GpxFileUtil.buildTrailRouteFromGpx(
+    //     myRecording,
+    //     name: myRecording.metadata?.name ?? 'My Recording',
+    //     location: 'Local Area',
+    //     description: myRecording.metadata?.desc ?? 'Recorded trail',
+    //     images: const ['assets/images/pexels-ivanlodo-2961929.jpg'],
+    //     walkingSpeedKmh: 5.1,
+    //   );
+
+    //   if (!mounted) return;
+    //   setState(() {
+    //     campSiteRoute = campSite;
+    //     mourneWayRoute = mourne;
+    //     libraryRoute = libraryTrail;
+    //     lawrenceRoute = lawrenceTrail;
+    //     sanFranRoute = sanFran;
+    //     myRecordingRoute = myRecordingFile;
+    //     isLoading = false;
+    //   });
+    // } catch (e) {
+    //   debugPrint("❌ Error loading trails: $e");
+    //   if (!mounted) return;
+    //   setState(() {
+    //     errorMessage = "Failed to load trails. Please try again.";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -209,27 +301,13 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
 
               // Trail cards with loading states
               if (isLoading && errorMessage == null)
-                const CircularProgressIndicator()
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
               else if (!isLoading && errorMessage == null) ...[
-                // Local trails
-                campSiteRoute != null
-                    ? TrailCard(trailRoute: campSiteRoute!)
-                    : const SizedBox.shrink(),
-                mourneWayRoute != null
-                    ? TrailCard(trailRoute: mourneWayRoute!)
-                    : const SizedBox.shrink(),
-                libraryRoute != null
-                    ? TrailCard(trailRoute: libraryRoute!)
-                    : const SizedBox.shrink(),
-                lawrenceRoute != null
-                    ? TrailCard(trailRoute: lawrenceRoute!)
-                    : const SizedBox.shrink(),
-                sanFranRoute != null
-                    ? TrailCard(trailRoute: sanFranRoute!)
-                    : const SizedBox.shrink(),
-                myRecordingRoute != null
-                    ? TrailCard(trailRoute: myRecordingRoute!)
-                    : const SizedBox.shrink(),
+                // Display trails from server
+                ...trails.map((trail) => TrailCard(trailRoute: trail)).toList(),
               ],
             ],
           ),
