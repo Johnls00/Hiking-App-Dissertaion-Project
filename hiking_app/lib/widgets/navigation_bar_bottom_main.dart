@@ -14,8 +14,10 @@ class MainBottomNavigationBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/trail_recording');
         break;
       case 2:
+        Navigator.pushReplacementNamed(context, '/saved_trails');
         break;
       case 3:
+        Navigator.pushReplacementNamed(context, '/profile');
         break;
     }
   }

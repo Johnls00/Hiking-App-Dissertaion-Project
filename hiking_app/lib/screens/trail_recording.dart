@@ -7,9 +7,7 @@ import 'package:hiking_app/utilities/user_location_tracker.dart';
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     hide LocationSettings;
-import 'package:hiking_app/utilities/gpx_file_util.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import 'package:hiking_app/screens/trail_save_screen.dart';
 
 class TrailRecordingScreen extends StatefulWidget {
   const TrailRecordingScreen({super.key});
@@ -38,7 +36,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   // Timer? _elapsedTimer;
 
   // List<Trackpoint> _recordedPath = [];
-  List<Point> _userTrailPointsLine = [];
+  final List<Point> _userTrailPointsLine = [];
 
   StreamSubscription<RecordingStats>? _statsSub;
   StreamSubscription<Trackpoint>? _pointSub;
@@ -113,19 +111,17 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
     debugPrint('🛑 Stopped trail recording');
     debugPrint('📊 Recorded ${_recorder.recordedTrack.length} points');
 
-    // Save GPX via your existing util
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final path = p.join(dir.path, 'my_recording.gpx');
-      await GpxFileUtil.saveTrackpointsAsGpx(
-        _recorder.recordedTrack,
-        path,
-        name: 'Trail Recording',
+    // Navigate to save screen instead of automatically saving
+    if (mounted && _recorder.recordedTrack.isNotEmpty) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TrailSaveScreen(
+            recordedTrack: _recorder.recordedTrack,
+            totalDistance: _totalDistance,
+            elapsedTime: _elapsedTime,
+          ),
+        ),
       );
-      debugPrint('✅ GPX saved to $path');
-    } catch (e, st) {
-      debugPrint('❌ Failed to save GPX: $e');
-      debugPrint(st.toString());
     }
   }
   // Future<void> _startRecording() async {
@@ -328,23 +324,23 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
     return Column(
       children: [
         Text(
-          'Ready to record your trail',
+          'Ready to record your trail?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,
             color: Colors.black87,
           ),
         ),
-        SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildStatCard("Time", "00:00:00", ""),
-            _buildStatCard("Distance", "0.00", "km"),
-            _buildStatCard("Elevation", "0.0", "m"),
-          ],
-        ),
-        SizedBox(height: 20),
+        SizedBox(height: 15),
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //   children: [
+        //     _buildStatCard("Time", "00:00:00", ""),
+        //     _buildStatCard("Distance", "0.00", "km"),
+        //     _buildStatCard("Elevation", "0.0", "m"),
+        //   ],
+        // ),
+        // SizedBox(height: 20),
         ElevatedButton(
           onPressed: _startRecording,
           style: ElevatedButton.styleFrom(
@@ -371,22 +367,22 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   Widget _buildRecordingStats() {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.fiber_manual_record, color: Colors.red, size: 16),
-            SizedBox(width: 8),
-            Text(
-              'Recording in progress',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 15),
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.center,
+        //   children: [
+        //     Icon(Icons.fiber_manual_record, color: Colors.red, size: 16),
+        //     SizedBox(width: 8),
+        //     Text(
+        //       'Recording in progress',
+        //       style: TextStyle(
+        //         fontSize: 16,
+        //         fontWeight: FontWeight.w500,
+        //         color: Colors.red,
+        //       ),
+        //     ),
+        //   ],
+        // ),
+        // SizedBox(height: 15),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -415,29 +411,29 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // ElevatedButton(
+            //   onPressed: () {
+            //     // TODO: Pause/Resume functionality
+            //   },
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Colors.orange,
+            //     foregroundColor: Colors.white,
+            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(10),
+            //     ),
+            //   ),
+            //   child: Row(
+            //     mainAxisSize: MainAxisSize.min,
+            //     children: [
+            //       Icon(Icons.pause, size: 18),
+            //       SizedBox(width: 6),
+            //       Text('Pause'),
+            //     ],
+            //   ),
+            // ),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Pause/Resume functionality
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.pause, size: 18),
-                  SizedBox(width: 6),
-                  Text('Pause'),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: _stopRecording,
+              onPressed: _showFinishedConfirmationDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -477,6 +473,51 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
     );
   }
 
+  /// Show finished confirmation dialog
+  void _showFinishedConfirmationDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.celebration, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Trail Complete?'),
+          ],
+        ),
+        content: const Text('Are you ready to finish and save your hike? '),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green, 
+                  foregroundColor: Colors.white,
+                ), 
+                child: const Text('Resume'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  _stopRecording(); // Stop recording and navigate to save screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, 
+                  foregroundColor: Colors.white,
+                ), 
+                child: const Text('Finish'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDuration(Duration d) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     return "${twoDigits(d.inHours)}:${twoDigits(d.inMinutes.remainder(60))}:${twoDigits(d.inSeconds.remainder(60))}";
@@ -495,13 +536,13 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
             // Recording status indicator
             if (_isRecording)
               Positioned(
-                top: 65,
-                left: 20,
-                right: 20,
+                top: 15,
+                left: 100,
+                right: 100,
                 child: Container(
                   padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.9),
+                    color: Colors.red.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -531,13 +572,14 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Top bar with back button and title
-                  Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [RoundBackButton(), SizedBox(width: 16)],
+                  if (!_isRecording)
+                    Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [RoundBackButton(onPressed: () { Navigator.pushReplacementNamed(context, '/home'); },), SizedBox(width: 16)],
+                      ),
                     ),
-                  ),
-                  Spacer(),
+                    Spacer(),
                   // Bottom card with stats and controls
                   Container(
                     width: double.infinity,
@@ -550,7 +592,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: Offset(0, -2),
                         ),
