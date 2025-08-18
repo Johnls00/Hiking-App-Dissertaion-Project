@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/models/trail.dart';
 import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
 import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -41,7 +41,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
 
     try {
       final trailRoute =
-          ModalRoute.of(context)!.settings.arguments as TrailRoute;
+          ModalRoute.of(context)!.settings.arguments as Trail;
       final waypoint = trailRoute.waypoints[waypointIndex];
 
       await map_utils.addTrailLine(mapboxMapController, trailRoute.trackpoints);
@@ -58,7 +58,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
+    final trailRoute = ModalRoute.of(context)!.settings.arguments as Trail;
 
     return Scaffold(
       backgroundColor: Color.fromRGBO(241, 244, 248, 1),
