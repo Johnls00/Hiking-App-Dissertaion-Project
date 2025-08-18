@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:hiking_app/models/trail_geofence.dart';
-import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/models/trail.dart';
 import 'package:hiking_app/services/trail_geofence_service.dart';
 import 'package:hiking_app/utilities/geofence_utils.dart';
 import 'package:latlong2/latlong.dart';
@@ -191,19 +191,19 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Format elapsed time since trail start
-  String _formatElapsedTime() {
-    if (_trailStartTime == null) return '0:00';
+  // String _formatElapsedTime() {
+  //   if (_trailStartTime == null) return '0:00';
 
-    final elapsed = DateTime.now().difference(_trailStartTime!);
-    final hours = elapsed.inHours;
-    final minutes = elapsed.inMinutes % 60;
+  //   final elapsed = DateTime.now().difference(_trailStartTime!);
+  //   final hours = elapsed.inHours;
+  //   final minutes = elapsed.inMinutes % 60;
 
-    if (hours > 0) {
-      return '${hours}:${minutes.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
-    }
-  }
+  //   if (hours > 0) {
+  //     return '${hours}:${minutes.toString().padLeft(2, '0')}';
+  //   } else {
+  //     return '${minutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
+  //   }
+  // }
 
   /// Determine if user is currently on the trail
   bool _isUserOnTrail() {
@@ -248,7 +248,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
   /// Setup geofencing for a trail route with optimized settings
   Future<void> setupTrailGeofencing(
-    TrailRoute route,
+    Trail route,
     MapboxMap mapController,
   ) async {
     try {
