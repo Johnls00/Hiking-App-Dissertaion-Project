@@ -7,7 +7,7 @@ import 'package:geolocator/geolocator.dart' hide Position;
 import 'package:hiking_app/models/trackpoint.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:hiking_app/models/waypoint.dart';
-import 'package:hiking_app/models/route.dart'; 
+import 'package:hiking_app/models/trail.dart'; 
 
 
 class GpxFileUtil {
@@ -49,7 +49,7 @@ static String gpxFromTrackpoints(
       final w = Wpt()
         ..lat = tp.lat
         ..lon = tp.lon;
-      if (tp.ele != null) w.ele = tp.ele;
+      w.ele = tp.ele;
       return w;
     }).toList();
 
@@ -77,7 +77,7 @@ static String gpxFromTrackpoints(
 
 
 
-  static Future<TrailRoute> buildTrailRouteFromAsset(
+  static Future<Trail> buildTrailRouteFromAsset(
     String assetPath, {
     required String name,
     required String location,
@@ -96,7 +96,7 @@ static String gpxFromTrackpoints(
     );
   }
 
-  static TrailRoute buildTrailRouteFromGpx(
+  static Trail buildTrailRouteFromGpx(
     Gpx gpx, {
     required String name,
     required String location,
@@ -109,7 +109,7 @@ static String gpxFromTrackpoints(
     if (trackpoints.isEmpty) {
       throw StateError('GPX has no valid track points.');
     }
-
+    final id = "unknown";
     // Stats (use new methods)
     final distance = calculateTotalDistanceMeters(gpx); // meters
     final elevationGain = calculateElevationGainMeters(gpx); // meters
@@ -121,7 +121,8 @@ static String gpxFromTrackpoints(
     // Difficulty (simple buckets – adjust to your region)
     final difficulty = classifyDifficulty(distanceMeters: distance, elevationGainMeters: elevationGain);
 
-    return TrailRoute(
+    return Trail(
+      id,
       name,
       location,
       timeToComplete,

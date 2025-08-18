@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:hiking_app/models/route.dart';
+import 'package:hiking_app/models/trail.dart';
 import 'package:hiking_app/utilities/geofencing_mixin.dart';
 import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
 import 'package:hiking_app/utilities/user_location_tracker.dart';
@@ -22,7 +22,7 @@ class TrailMapViewScreen extends StatefulWidget {
 class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     with GeofencingMixin {
   StreamSubscription<geo.Position>? _userPositionStream; // <-- outside the class
-  TrailRoute? _trailRoute;
+  Trail? _trailRoute;
   late MapboxMap mapboxMapController;
   CircleAnnotationManager? circleAnnotationManager;
 
@@ -411,7 +411,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    _trailRoute = ModalRoute.of(context)!.settings.arguments as TrailRoute;
+    _trailRoute = ModalRoute.of(context)!.settings.arguments as Trail;
 
     return PopScope(
       canPop: true,
