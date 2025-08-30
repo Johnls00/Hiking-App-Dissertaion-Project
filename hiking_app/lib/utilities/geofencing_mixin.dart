@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:hiking_app/models/trail_geofence.dart';
 import 'package:hiking_app/models/trail.dart';
+import 'package:hiking_app/models/waypoint.dart';
+import 'package:hiking_app/models/waypoint_interaction.dart';
 import 'package:hiking_app/services/trail_geofence_service.dart';
+import 'package:hiking_app/services/waypoint_interaction_service.dart';
 import 'package:hiking_app/utilities/geofence_utils.dart';
+import 'package:hiking_app/widgets/waypoint_interaction_dialog.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Fixed version of GeofencingMixin with proper trail status widget
@@ -24,9 +28,17 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
   int _checkpointsReached = 0;
   double _estimatedProgress = 0.0; // 0.0 to 1.0
   bool _allowEndCompletion = false;
+  
+  // Trackpoint-based progress tracking
+  List<LatLng> _trailTrackpoints = [];
+  int _lastPassedTrackpointIndex = -1;
+  double _trackpointProgress = 0.0;
 
   // Add trail status tracking
   bool _isCurrentlyOnTrail = true; // Track current trail status
+  
+  // Current trail reference for waypoint interactions
+  Trail? _currentTrail;
 
   @override
   void initState() {
@@ -246,19 +258,89 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     return false; // User is off trail
   }
 
+  /// Calculate user's progress along the trail using trackpoints
+  void _calculateTrackpointProgress(LatLng userLocation) {
+    if (_trailTrackpoints.isEmpty) return;
+    
+    double closestDistance = double.infinity;
+    int closestTrackpointIndex = -1;
+    
+    // Find the closest trackpoint to user's current location
+    for (int i = 0; i < _trailTrackpoints.length; i++) {
+      final distance = _calculateDistanceInMeters(userLocation, _trailTrackpoints[i]);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestTrackpointIndex = i;
+      }
+    }
+    
+    // Only update progress if we're reasonably close to the trail (within 50 meters)
+    if (closestDistance <= 50.0 && closestTrackpointIndex > _lastPassedTrackpointIndex) {
+      _lastPassedTrackpointIndex = closestTrackpointIndex;
+      
+      // Calculate progress as percentage of trackpoints passed
+      _trackpointProgress = (_lastPassedTrackpointIndex + 1) / _trailTrackpoints.length;
+      
+      // Update the main estimated progress to use trackpoint-based calculation
+      _estimatedProgress = _trackpointProgress;
+      
+      debugPrint(
+        'Trackpoint Progress: ${(_estimatedProgress * 100).toStringAsFixed(1)}% '
+        '(trackpoint ${_lastPassedTrackpointIndex + 1}/${_trailTrackpoints.length}, '
+        'distance to trail: ${closestDistance.toStringAsFixed(1)}m)',
+      );
+      
+      // Allow end completion when we're 90% through the trackpoints
+      if (!_allowEndCompletion && _estimatedProgress >= 0.9) {
+        _allowEndCompletion = true;
+        debugPrint('Trail progress sufficient - end completion now allowed (90% trackpoints passed)');
+      }
+    }
+  }
+
+  /// Calculate distance between two points in meters
+  double _calculateDistanceInMeters(LatLng point1, LatLng point2) {
+    const double earthRadius = 6371000; // Earth's radius in meters
+    final double lat1Rad = point1.latitude * math.pi / 180;
+    final double lat2Rad = point2.latitude * math.pi / 180;
+    final double deltaLatRad = (point2.latitude - point1.latitude) * math.pi / 180;
+    final double deltaLngRad = (point2.longitude - point1.longitude) * math.pi / 180;
+
+    final double a = math.sin(deltaLatRad / 2) * math.sin(deltaLatRad / 2) +
+        math.cos(lat1Rad) * math.cos(lat2Rad) *
+        math.sin(deltaLngRad / 2) * math.sin(deltaLngRad / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  /// Public method to update progress based on current user location
+  /// Can be called from screens to provide real-time progress updates
+  void updateProgressFromLocation(LatLng userLocation) {
+    _calculateTrackpointProgress(userLocation);
+    if (mounted) {
+      setState(() {
+        // Trigger UI update
+      });
+    }
+  }
+
   /// Setup geofencing for a trail route with optimized settings
   Future<void> setupTrailGeofencing(
     Trail route,
     MapboxMap mapController,
   ) async {
     try {
+      // Store current trail reference for waypoint interactions
+      _currentTrail = route;
+      
       // Clear existing geofences and reset progress tracking
       _geofenceService.clearGeofences();
       _activeGeofences.clear();
       _resetTrailProgress();
 
-      // Convert trackpoints to LatLng for corridor geofencing
-      final trailPoints = route.trackpoints
+      // Store trackpoints for progress calculation
+      _trailTrackpoints = route.trackpoints
           .map(
             (point) => LatLng(
               point.coordinates.lat.toDouble(),
@@ -266,6 +348,9 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
             ),
           )
           .toList();
+
+      // Convert trackpoints to LatLng for corridor geofencing
+      final trailPoints = _trailTrackpoints;
 
       // 1. Create corridor geofences with optimized spacing
       _geofenceService.addTrailCorridorGeofences(
@@ -347,6 +432,11 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
           _isCurrentlyOnTrail = newTrailStatus;
         });
         
+        // If user just got on trail and trail hasn't been started yet, start the trail
+        if (newTrailStatus && !_trailStarted) {
+          _onTrailStarted();
+        }
+        
         // Log status change
         debugPrint('Trail status changed: ${_isCurrentlyOnTrail ? "ON TRAIL" : "OFF TRAIL"}');
         
@@ -381,14 +471,9 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
   /// Handle geofence enter/exit events
   void _handleGeofenceEvent(GeofenceEvent event) {
-    // final message = GeofenceUtils.getNotificationMessage(event);
-    // final isEntering = event.eventType == GeofenceEventType.enter;
-
-    // Show notification only if message is not empty (skip corridor geofences)
-    // if (message.isNotEmpty) {
-    //   _showGeofenceNotification(message, isEntering);
-    // }
-
+    // Calculate trackpoint-based progress using the event location
+    _calculateTrackpointProgress(event.location);
+    
     // Update progress tracking
     _updateTrailProgress(event);
 
@@ -469,6 +554,12 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
   /// Called when hiker starts the trail
   void _onTrailStarted() {
+    // Prevent multiple trail starts
+    if (_trailStarted) {
+      debugPrint('Trail already started - ignoring duplicate start signal');
+      return;
+    }
+    
     debugPrint('Trail started - timer and tracking begun');
     _trailStarted = true;
     _trailStartTime = DateTime.now();
@@ -479,28 +570,90 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     debugPrint('Checkpoint reached: ${geofence.name}');
     _checkpointsReached++;
 
-    // Update estimated progress based on geofence types
-    final totalProgressGeofences = _activeGeofences
-        .where(
-          (g) =>
-              g.type == GeofenceType.checkpoint ||
-              g.type == GeofenceType.waypoint ||
-              g.type == GeofenceType.corridor,
-        )
-        .length;
+    if (!mounted || _currentTrail == null) return;
 
-    if (totalProgressGeofences > 0) {
-      _estimatedProgress = _checkpointsReached / totalProgressGeofences;
+    // Find the corresponding waypoint from the current trail
+    Waypoint? matchingWaypoint;
+    
+    try {
+      // Try to find waypoint by name first
+      matchingWaypoint = _currentTrail!.waypoints.firstWhere(
+        (waypoint) => waypoint.name == geofence.name,
+      );
+    } catch (e) {
+      // If name doesn't match, try to find by proximity to geofence center
+      double minDistance = double.infinity;
+      for (final waypoint in _currentTrail!.waypoints) {
+        final distance = _calculateDistanceInMeters(
+          LatLng(waypoint.lat, waypoint.lon),
+          geofence.center,
+        );
+        if (distance < minDistance && distance < 50) { // Within 50m
+          minDistance = distance;
+          matchingWaypoint = waypoint;
+        }
+      }
     }
 
-    // After reaching several checkpoints, allow end completion for close start/end trails
-    if (!_allowEndCompletion && _checkpointsReached >= 3) {
-      _allowEndCompletion = true;
-      debugPrint('Trail progress sufficient - end completion now allowed');
+    if (matchingWaypoint != null) {
+      // Show waypoint interaction dialog
+      _showWaypointInteractionDialog(matchingWaypoint);
+    } else {
+      // Fallback to simple dialog if no matching waypoint found
+      _showSimpleCheckpointDialog(geofence);
     }
 
+    // Progress is now primarily calculated using trackpoints in _calculateTrackpointProgress
+    // Keep checkpoint counting for reference but don't use it for main progress calculation
+    
     debugPrint(
-      'Progress: ${(_estimatedProgress * 100).toStringAsFixed(1)}% ($_checkpointsReached/$totalProgressGeofences)',
+      'Checkpoint Progress: $_checkpointsReached checkpoints reached, '
+      'Overall Progress: ${(_estimatedProgress * 100).toStringAsFixed(1)}% (trackpoint-based)',
+    );
+  }
+
+  /// Show the waypoint interaction dialog
+  void _showWaypointInteractionDialog(Waypoint waypoint) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Require user interaction
+      builder: (context) => WaypointInteractionDialog(
+        waypoint: waypoint,
+        onInteractionSaved: (WaypointInteraction interaction) async {
+          try {
+            await WaypointInteractionService.saveWaypointInteraction(
+              interaction,
+              trailName: _currentTrail?.name ?? 'current_trail',
+            );
+            debugPrint('✅ Waypoint interaction saved for ${waypoint.name}');
+          } catch (e) {
+            debugPrint('❌ Failed to save waypoint interaction: $e');
+          }
+        },
+      ),
+    );
+  }
+
+  /// Fallback simple dialog for geofences without matching waypoints
+  void _showSimpleCheckpointDialog(TrailGeofence geofence) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.celebration, color: Colors.green),
+            const SizedBox(width: 8),
+            Text('Reached ${geofence.name}'),
+          ],
+        ),
+        content: const Text('Great progress on your hike!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -624,6 +777,12 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     _estimatedProgress = 0.0;
     _allowEndCompletion = false;
     _isCurrentlyOnTrail = true; // Reset to on-trail
-    debugPrint('Trail progress tracking reset');
+    
+    // Reset trackpoint-based progress tracking
+    _trailTrackpoints.clear();
+    _lastPassedTrackpointIndex = -1;
+    _trackpointProgress = 0.0;
+    
+    debugPrint('Trail progress tracking reset (including trackpoint progress)');
   }
 }

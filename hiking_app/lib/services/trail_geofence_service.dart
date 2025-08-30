@@ -152,7 +152,7 @@ class TrailGeofenceService extends ChangeNotifier {
         ));
         
         // Enhanced debug prints for enter events
-        debugPrint('🟢 ENTERED GEOFENCE:');
+        debugPrint('   ENTERED GEOFENCE:');
         debugPrint('   Name: ${geofence.name}');
         debugPrint('   Type: ${geofence.type}');
         debugPrint('   ID: ${geofence.id}');
@@ -178,7 +178,7 @@ class TrailGeofenceService extends ChangeNotifier {
         ));
         
         // Enhanced debug prints for exit events
-        debugPrint('🔴 EXITED GEOFENCE:');
+        debugPrint('   EXITED GEOFENCE:');
         debugPrint('   Name: ${geofence.name}');
         debugPrint('   Type: ${geofence.type}');
         debugPrint('   ID: ${geofence.id}');
@@ -202,10 +202,6 @@ class TrailGeofenceService extends ChangeNotifier {
     
     final location = LatLng(position.latitude, position.longitude);
     _currentLocation = location;
-    
-    // Optional: Print location updates (can be noisy, uncomment if needed)
-    // debugPrint('📍 Location Update: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)} (accuracy: ${position.accuracy.toStringAsFixed(1)}m)');
-    
     // Check geofences immediately for trail status changes
     _checkGeofences(location);
     
@@ -224,37 +220,6 @@ class TrailGeofenceService extends ChangeNotifier {
     debugPrint('Stopped geofence monitoring');
   }
 
-  /// Update current location and check geofences
-  void _updateLocation(LatLng location) {
-    if (_isDisposed) return;
-    _currentLocation = location;
-    _checkGeofences(_currentLocation!);
-    if (!_isDisposed) notifyListeners();
-  }
-
-  // Add these optimizations to your geofence service:
-
-  /// Faster location update settings
-  static const LocationSettings _fastLocationSettings = LocationSettings(
-    accuracy: LocationAccuracy.bestForNavigation,
-    distanceFilter: 1, // No distance filter for immediate updates
-    timeLimit: Duration(seconds: 3), // Update every 3 seconds minimum
-  );
-
-  /// Reduced debounce time for faster event processing
-  Timer? _debounceTimer;
-  static const Duration _debounceDelay = Duration(milliseconds: 500); // Was probably 1000ms
-
-  void _processLocationUpdate(Position position) {
-    // Cancel previous debounce
-    _debounceTimer?.cancel();
-    
-    // Process immediately for critical events, debounce for others
-    _debounceTimer = Timer(_debounceDelay, () {
-      _checkGeofences(position as LatLng);
-      notifyListeners(); // Trigger UI updates faster
-    });
-  }
 
   /// Get the nearest geofence to current location
   TrailGeofence? getNearestGeofence() {

@@ -33,7 +33,7 @@ Future<void> setupPositionTracking(MapboxMap mapController, {bool Function()? is
 
   geo.LocationSettings locationSettings = geo.LocationSettings(
     accuracy: geo.LocationAccuracy.high,
-    distanceFilter: 100,
+    distanceFilter: 25,
   );
 
   userPositionStream?.cancel();
@@ -53,5 +53,17 @@ Future<void> setupPositionTracking(MapboxMap mapController, {bool Function()? is
           );
         }
       });
+}
+
+/// Cancel the active position tracking stream
+Future<void> cancelPositionTracking() async {
+  try {
+    await userPositionStream?.cancel();
+    userPositionStream = null;
+    print('📍 Location tracking cancelled successfully');
+  } catch (e) {
+    print('⚠️ Error cancelling location tracking: $e');
+    userPositionStream = null; // Set to null anyway
+  }
 }
 

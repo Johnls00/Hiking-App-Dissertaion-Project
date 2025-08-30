@@ -110,7 +110,7 @@ class TrailsRepository {
         
         if (attempt == maxRetries) {
           print("❌ All attempts failed, giving up");
-          throw e; // Re-throw on final attempt
+          rethrow; // Re-throw on final attempt
         }
         
         // Shorter backoff since we're already timing out quickly
@@ -141,9 +141,11 @@ Future<List<String>> fetchTrailImageUrls(String trailId) async {
   for (final doc in snap.docs) {
     final data = doc.data();
     final raw = (data['url'] ?? data['path'] ?? '').toString().trim();
-    if (raw.isEmpty) return [
+    if (raw.isEmpty) {
+      return [
                 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fstatic.vecteezy.com%2Fsystem%2Fresources%2Fpreviews%2F005%2F720%2F408%2Foriginal%2Fcrossed-image-icon-picture-not-available-delete-picture-symbol-free-vector.jpg&f=1&nofb=1&ipt=35d0cda0ed3aa16562fc22367471b7cb514d1c55cb5768ceeb35f7107c4924c1'
               ];
+    }
 
     // Turn gs:// or plain path into a downloadable https URL
     if (raw.startsWith('gs://') || raw.startsWith('http')) {

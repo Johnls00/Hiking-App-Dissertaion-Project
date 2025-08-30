@@ -11,7 +11,7 @@ import 'package:hiking_app/screens/trail_view.dart';
 import 'package:hiking_app/screens/trail_waypoints_view.dart';
 
 class WidgetTree extends StatefulWidget {
-  const WidgetTree({Key? key}) : super(key: key);
+  const WidgetTree({super.key});
 
   @override
   State<WidgetTree> createState() => _WidgetTreeState();

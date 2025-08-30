@@ -94,7 +94,7 @@ class SavedTrailCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _buildStatChip(
                     icon: Icons.location_on,
-                    label: '${trail.location}',
+                    label: trail.location,
                   ),
                   if (trail.images.isNotEmpty) ...[
                     const SizedBox(width: 8),

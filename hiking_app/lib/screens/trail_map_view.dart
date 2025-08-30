@@ -17,11 +17,10 @@ class TrailMapViewScreen extends StatefulWidget {
   State<TrailMapViewScreen> createState() => _TrailMapViewScreenState();
 }
 
-
-
 class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     with GeofencingMixin {
-  StreamSubscription<geo.Position>? _userPositionStream; // <-- outside the class
+  StreamSubscription<geo.Position>?
+  _userPositionStream; // <-- outside the class
   Trail? _trailRoute;
   late MapboxMap mapboxMapController;
   CircleAnnotationManager? circleAnnotationManager;
@@ -77,7 +76,10 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
 
     // Setup position tracking and geofencing with a small delay
     await Future.delayed(const Duration(milliseconds: 200));
-    await setupPositionTracking(mapboxMapController, isDisposed: () => _isExiting);
+    await setupPositionTracking(
+      mapboxMapController,
+      isDisposed: () => _isExiting,
+    );
 
     // Draw the trail line on the map
     await map_utils.addTrailLine(mapboxMapController, _trailRoute!.trackpoints);
@@ -219,6 +221,9 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
           //   });
           // }
 
+          // Update geofencing progress with current location
+          updateProgressFromLocation(userLocation);
+
           // Force immediate UI update for trail status
           if (_isExiting) return;
           if (mounted) {
@@ -243,34 +248,42 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
   }
 
   Future<void> _cleanup() async {
-  if (_isExiting) return;
-  _isExiting = true;
+    if (_isExiting) return;
+    _isExiting = true;
 
-  try { await _userPositionStream?.cancel(); } catch (_) {}
-  _userPositionStream = null;
+    try {
+      await _userPositionStream?.cancel();
+    } catch (_) {}
+    _userPositionStream = null;
 
-  try { _elapsedTimer?.cancel(); } catch (_) {}
-  _elapsedTimer = null;
+    try {
+      _elapsedTimer?.cancel();
+    } catch (_) {}
+    _elapsedTimer = null;
 
-  try { await stopGeofencing(); } catch (e) { debugPrint('Error stopping geofencing during cleanup: $e'); }
+    try {
+      await stopGeofencing();
+    } catch (e) {
+      debugPrint('Error stopping geofencing during cleanup: $e');
+    }
 
-  // Turn off Mapbox location component & following
-  try {
-    await mapboxMapController.location.updateSettings(
-      LocationComponentSettings(
-        enabled: false,
-        pulsingEnabled: false,
-        puckBearingEnabled: false,
-        // If you used follow-puck parameters, also null/disable them:
-        // puckBearing: null,
-        // puckBearingSource: null,
-      ),
-    );
-  } catch (_) {}
+    // Turn off Mapbox location component & following
+    try {
+      await mapboxMapController.location.updateSettings(
+        LocationComponentSettings(
+          enabled: false,
+          pulsingEnabled: false,
+          puckBearingEnabled: false,
+          // If you used follow-puck parameters, also null/disable them:
+          // puckBearing: null,
+          // puckBearingSource: null,
+        ),
+      );
+    } catch (_) {}
 
-  await map_utils.safelyCleanupAnnotationManager(circleAnnotationManager);
-  circleAnnotationManager = null;
-}
+    await map_utils.safelyCleanupAnnotationManager(circleAnnotationManager);
+    circleAnnotationManager = null;
+  }
 
   void _stopTrailNavigation() {
     _userPositionStream?.cancel();
@@ -462,7 +475,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
                                 }
                               },
                             ),
-                            // SizedBox(width: 20),
+                          // SizedBox(width: 20),
                           if (_isNavigating)
                             Flexible(
                               flex: 1,

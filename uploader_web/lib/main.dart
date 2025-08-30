@@ -20,7 +20,7 @@ Future<void> main() async {
   );
   FirebaseFirestore.instance.enableNetwork(); // call once at startup
   final o = Firebase.app().options;
-  print('projectId=${o.projectId} appId=${o.appId} storage=${o.storageBucket}');
+  debugPrint('projectId=${o.projectId} appId=${o.appId} storage=${o.storageBucket}');
 
   runApp(const MyApp());
 }

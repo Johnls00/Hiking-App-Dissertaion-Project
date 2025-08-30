@@ -34,7 +34,7 @@ class TrailGeofenceBuilder {
         
         geofences.add(TrailGeofence(
           id: '${trailId}_corridor_${geofenceIndex++}',
-          name: '$trailName Corridor ${geofenceIndex}',
+          name: '$trailName Corridor $geofenceIndex',
           center: point,
           radius: corridorWidth,
           description: 'Trail corridor segment',

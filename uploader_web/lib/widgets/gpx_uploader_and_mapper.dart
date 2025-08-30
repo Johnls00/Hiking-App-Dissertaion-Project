@@ -19,7 +19,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path; // avoid name clash
 import 'package:uploader_web/firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:async' show unawaited;
+
 
 // ---- Firebase (optional) ----
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,7 +35,9 @@ class GpxUploaderAndMapper extends StatefulWidget {
 }
 
 class _GpxUploaderAndMapperState extends State<GpxUploaderAndMapper> {
+  // ignore: non_constant_identifier_names
   final GEOCODING_API_KEY = dotenv.env['GEOCODING_API_KEY'] ?? '';
+  // ignore: non_constant_identifier_names
   final MAPBOX_ACCESS_TOKEN = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
   
   
@@ -65,6 +67,7 @@ class _GpxUploaderAndMapperState extends State<GpxUploaderAndMapper> {
     setState(() {
       _trailImageBytes = file.bytes!;
       _trailImageName = file.name;
+      // ignore: unnecessary_brace_in_string_interps
       _status = 'Selected cover photo: ${_trailImageName}';
     });
   }
@@ -626,7 +629,7 @@ class _GpxUploaderAndMapperState extends State<GpxUploaderAndMapper> {
         color = Colors.blue;
       }
 
-      final title = (p.name != null && p.name!.isNotEmpty) ? p.name! : 'Waypoint';
+      final title = (p.name.isNotEmpty) ? p.name : 'Waypoint';
       final distKm = (p.distanceFromStart / 1000).toStringAsFixed(2);
 
       return Marker(
@@ -663,6 +666,7 @@ class _GpxUploaderAndMapperState extends State<GpxUploaderAndMapper> {
               'id': 'mapbox/outdoors-v12',
             },
             userAgentPackageName: 'com.your.app',
+            // ignore: deprecated_member_use
             tileSize: 512,
             zoomOffset: -1,
             maxNativeZoom: 22,

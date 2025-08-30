@@ -52,8 +52,8 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
       for (var doc in query.docs) {
         final data = doc.data();
         
-        debugPrint("📄 Processing trail: ${doc.id}");
-        debugPrint("📊 Raw data types: image_path=${data['image_path'].runtimeType}, waypoints=${data['waypoints'].runtimeType}, trackpoints=${data['trackpoints'].runtimeType}");
+        debugPrint(" Processing trail: ${doc.id}");
+        debugPrint(" Raw data types: image_path=${data['image_path'].runtimeType}, waypoints=${data['waypoints'].runtimeType}, trackpoints=${data['trackpoints'].runtimeType}");
         
         // Parse images
         List<String> images = [];
@@ -307,7 +307,7 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
                 )
               else if (!isLoading && errorMessage == null) ...[
                 // Display trails from server
-                ...trails.map((trail) => TrailCard(trailRoute: trail)).toList(),
+                ...trails.map((trail) => TrailCard(trailRoute: trail)),
               ],
             ],
           ),

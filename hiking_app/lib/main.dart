@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:hiking_app/widget_tree.dart';
 
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Load environment variables with error handling

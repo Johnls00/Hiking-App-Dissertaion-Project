@@ -189,18 +189,18 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                 ],
               ),
 
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    trailRoute.images.first,
-                    width: double.maxFinite, // fixed width for the image
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              // Padding(
+              //   padding: const EdgeInsets.all(8.0),
+              //   child: ClipRRect(
+              //     borderRadius: BorderRadius.circular(12),
+              //     child: Image.asset(
+              //       trailRoute.images.first,
+              //       width: double.maxFinite, // fixed width for the image
+              //       height: 200,
+              //       fit: BoxFit.cover,
+              //     ),
+              //   ),
+              // ),
 
               SizedBox(height: 8),
 
