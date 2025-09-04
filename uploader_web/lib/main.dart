@@ -2,9 +2,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:uploader_web/widget_tree.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/uploader_screen.dart';
 
 
 Future<void> main() async {
@@ -30,11 +30,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'GPX Uploader',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
-      home: const UploaderScreen(),
-    );
+    return const WidgetTree();
   }
 }
+
