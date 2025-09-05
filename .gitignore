@@ -127,3 +127,10 @@ hiking_app/.DS_Store
 .DS_Store
 hiking_app/lib/env/env.g.dart
 hiking_app/ios/Runner/Info.plist
+.DS_Store
+.DS_Store
+hiking_app/build_log.txt
+hiking_app/ios/.DS_Store
+hiking_app/ios/.DS_Store
+uploader_web/lib/firebase_options.dart
+hiking_app/android/release_build.txt

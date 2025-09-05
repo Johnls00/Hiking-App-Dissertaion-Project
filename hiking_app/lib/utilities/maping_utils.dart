@@ -194,7 +194,7 @@ Future<void> redrawLineToTrail(
     await mapController.style.removeStyleLayer(layerId);
     await mapController.style.removeStyleSource(sourceId);
   } catch (e) {
-    print("Layer/source not found on redraw: $e");
+    debugPrint("Layer/source not found on redraw: $e");
   }
 
   // Add new source

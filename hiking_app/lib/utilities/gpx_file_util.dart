@@ -59,7 +59,7 @@ static String gpxFromTrackpoints(
   return GpxWriter().asString(gpx, pretty: true);
 }
 
-  /// Persist a GPX file to [filePath] from a list of Trackpoints.
+  /// Save a GPX file to [filePath] from a list of Trackpoints.
   /// Returns the written [File]. The path must be writable on the platform
   /// (e.g., use path_provider to obtain an app documents directory).
   static Future<File> saveTrackpointsAsGpx(
@@ -73,8 +73,6 @@ static String gpxFromTrackpoints(
     await file.writeAsString(xml);
     return file;
   }
-
-
 
 
   static Future<Trail> buildTrailRouteFromAsset(

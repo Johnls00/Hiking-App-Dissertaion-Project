@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       // Debug the user profile state
       await UserProfileManager.debugUserProfile();
-      
+
       User? user = await UserProfileManager.loadUserProfile();
 
       debugPrint('Loaded user profile: ${user?.toJson()}');
@@ -54,11 +54,15 @@ class _ProfileScreenState extends State<ProfileScreen>
             email: 'hiker@example.com',
           );
         } else {
-          debugPrint('Profile file exists but failed to load, trying to recalculate stats');
+          debugPrint(
+            'Profile file exists but failed to load, trying to recalculate stats',
+          );
           // If file exists but failed to load, try to recalculate stats
           user = await UserProfileManager.recalculateUserStats();
           if (user == null) {
-            debugPrint('Recalculation failed, creating new user as last resort');
+            debugPrint(
+              'Recalculation failed, creating new user as last resort',
+            );
             user = await UserProfileManager.createDefaultUser(
               name: 'Hiker',
               email: 'hiker@example.com',
@@ -244,7 +248,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         automaticallyImplyLeading: false,
         actions: [
           IconButton(onPressed: _editProfile, icon: const Icon(Icons.edit)),
-          IconButton(onPressed: () => Navigator.pushReplacementNamed(context, '/login'), icon: const Icon(Icons.logout)),
+          IconButton(
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: Column(
@@ -257,8 +264,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.1),
-                  Theme.of(context).primaryColor.withOpacity(0.05),
+                  Theme.of(
+                    context,
+                  ).primaryColor.withAlpha((255 * 0.2).toInt()), // 20% opacity
+                  Theme.of(
+                    context,
+                  ).primaryColor.withAlpha((255 * 0.05).toInt()), // 5% opacity
                 ],
               ),
             ),
@@ -431,7 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withAlpha((255 * 0.1).toInt()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.hiking, color: Colors.green, size: 24),

@@ -90,7 +90,7 @@ class TrailGeofenceService extends ChangeNotifier {
       addGeofence(geofence);
     }
 
-    debugPrint('✅ Added ${corridorGeofences.length} corridor geofences');
+    debugPrint('Added ${corridorGeofences.length} corridor geofences');
   }
 
   /// Start monitoring geofences
@@ -135,8 +135,8 @@ class TrailGeofenceService extends ChangeNotifier {
 
   /// Check if current location is within any geofences
   void _checkGeofences(LatLng location) {
-    debugPrint('🔍 CHECKING GEOFENCES: ${_geofences.length} geofences to check at location ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}');
-    
+    debugPrint('CHECKING GEOFENCES: ${_geofences.length} geofences to check at location ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}');
+
     for (final geofence in _geofences) {
       final isInside = geofence.isLocationInside(location);
       final wasActive = _activeGeofences.contains(geofence.id);

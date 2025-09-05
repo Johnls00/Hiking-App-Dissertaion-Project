@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gpx/gpx.dart';
 
 class TrailsRepository {
@@ -13,7 +13,7 @@ class TrailsRepository {
       // Execute the query to get documents
       final querySnapshot = await trailsCollection.get();
 
-      print("✅ Fetched ${querySnapshot.docs.length} trails");
+      debugPrint("Fetched ${querySnapshot.docs.length} trails");
 
       // Return list of trail data maps with document IDs
       List<Map<String, dynamic>> trails = [];
@@ -26,7 +26,7 @@ class TrailsRepository {
           final images = await fetchTrailImages(doc.id);
           data['images'] = images;
         } catch (e) {
-          print("⚠️ Failed to fetch images for trail ${doc.id}: $e");
+          debugPrint("Failed to fetch images for trail ${doc.id}: $e");
           data['images'] = [];
         }
         
@@ -35,7 +35,7 @@ class TrailsRepository {
       
       return trails;
     } catch (e) {
-      print("❌ Error fetching trails: $e");
+      debugPrint("Error fetching trails: $e");
       rethrow;
     }
   }
@@ -60,61 +60,63 @@ class TrailsRepository {
       
       return imageUrls;
     } catch (e) {
-      print("❌ Error fetching trail images: $e");
+      debugPrint("Error fetching trail images: $e");
       return [];
     }
   }
 
   Future<Gpx> loadGpxFromFirestoreDoc(String trailGpxUrl) async {
     return await _retryOperation(() async {
-      print("🔍 Starting GPX download for trail: $trailGpxUrl");
+      debugPrint("Starting GPX download for trail: $trailGpxUrl");
 
       // 2) Build a Storage ref from URL or path
       final ref = (trailGpxUrl.startsWith('gs://') || trailGpxUrl.startsWith('http'))
           ? FirebaseStorage.instance.refFromURL(trailGpxUrl)
           : FirebaseStorage.instance.ref(trailGpxUrl);
 
-      print("🗂️ Storage reference created, starting download...");
+      debugPrint("Storage reference created, starting download...");
 
+    
       // 3) Download bytes with shorter timeout and progress tracking
       final bytes = await ref.getData()
           .timeout(Duration(seconds: 15), onTimeout: () {
-            print("⏰ GPX download timed out for $trailGpxUrl");
+            debugPrint("GPX download timed out for $trailGpxUrl");
             throw Exception('GPX download timed out');
           });
           
       if (bytes == null) {
-        print("❌ No bytes received for GPX file");
+        debugPrint("No bytes received for GPX file");
         throw Exception('Failed to download GPX bytes');
       }
 
-      print("✅ Downloaded ${bytes.length} bytes");
+      debugPrint("Downloaded ${bytes.length} bytes");
 
       // 4) Parse GPX
-      print("🔨 Parsing GPX data...");
+      debugPrint("Parsing GPX data...");
       final xml = utf8.decode(bytes);
       final gpx = GpxReader().fromString(xml);
-      print("✅ GPX parsed successfully");
-      
+      debugPrint("GPX parsed successfully");
+
       return gpx;
     });
   }
 
+// Retry operation with backoff if fails 
   Future<T> _retryOperation<T>(Future<T> Function() operation, {int maxRetries = 2}) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        print("🔄 Attempt $attempt of $maxRetries");
+        debugPrint("Attempt $attempt of $maxRetries");
         return await operation().timeout(Duration(seconds: 20));
       } catch (e) {
-        print("🔄 Attempt $attempt failed: $e");
-        
+        debugPrint("Attempt $attempt failed: $e");
+
         if (attempt == maxRetries) {
-          print("❌ All attempts failed, giving up");
+          debugPrint("All attempts failed, giving up");
           rethrow; // Re-throw on final attempt
         }
         
         // Shorter backoff since we're already timing out quickly
-        print("⏳ Waiting before retry...");
+        debugPrint("Waiting before retry...");
         await Future.delayed(Duration(seconds: attempt));
       }
     }
@@ -124,7 +126,7 @@ Future<List<String>> fetchTrailImageUrls(String trailId) async {
   // Use the correct default database id
   final fs = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
-    databaseId: '(default)', // ← note the parentheses
+    databaseId: '(default)', 
   );
 
   // Optional: order images if you store 'order' or 'createdAt'

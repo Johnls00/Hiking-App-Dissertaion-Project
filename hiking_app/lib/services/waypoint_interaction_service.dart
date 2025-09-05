@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:hiking_app/models/waypoint_interaction.dart';
@@ -44,9 +45,9 @@ class WaypointInteractionService {
         const JsonEncoder.withIndent('  ').convert(interactions),
       );
       
-      print('✅ Waypoint interaction saved successfully');
+      debugPrint('✅ Waypoint interaction saved successfully');
     } catch (e) {
-      print('❌ Error saving waypoint interaction: $e');
+      debugPrint('❌ Error saving waypoint interaction: $e');
       rethrow;
     }
   }
@@ -83,7 +84,7 @@ class WaypointInteractionService {
           .map((json) => WaypointInteraction.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('❌ Error loading waypoint interactions: $e');
+      debugPrint('❌ Error loading waypoint interactions: $e');
       return [];
     }
   }
@@ -139,10 +140,10 @@ class WaypointInteractionService {
           interactions.map((i) => i.toJson()).toList(),
         ),
       );
-      
-      print('✅ Waypoint interaction deleted successfully');
+
+      debugPrint('✅ Waypoint interaction deleted successfully');
     } catch (e) {
-      print('❌ Error deleting waypoint interaction: $e');
+      debugPrint('❌ Error deleting waypoint interaction: $e');
       rethrow;
     }
   }
@@ -160,10 +161,10 @@ class WaypointInteractionService {
       if (await interactionsDir.exists()) {
         await interactionsDir.delete(recursive: true);
       }
-      
-      print('✅ Trail interactions cleared successfully');
+
+      debugPrint('✅ Trail interactions cleared successfully');
     } catch (e) {
-      print('❌ Error clearing trail interactions: $e');
+      debugPrint('❌ Error clearing trail interactions: $e');
       rethrow;
     }
   }

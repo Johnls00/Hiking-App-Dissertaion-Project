@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:hiking_app/utilities/maping_utils.dart' as map_utils;
@@ -60,9 +61,9 @@ Future<void> cancelPositionTracking() async {
   try {
     await userPositionStream?.cancel();
     userPositionStream = null;
-    print('📍 Location tracking cancelled successfully');
+    debugPrint('Location tracking cancelled successfully');
   } catch (e) {
-    print('⚠️ Error cancelling location tracking: $e');
+    debugPrint('Error cancelling location tracking: $e');
     userPositionStream = null; // Set to null anyway
   }
 }

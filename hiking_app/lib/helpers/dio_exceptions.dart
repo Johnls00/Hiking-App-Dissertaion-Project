@@ -1,3 +1,4 @@
+// Exception handling for Dio errors found on github to give better error messages from API failures
 import 'package:dio/dio.dart';
 
 class DioExceptions implements Exception {

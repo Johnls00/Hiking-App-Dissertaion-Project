@@ -127,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (!mounted) return;
                               if (_errorMessage != null && _errorMessage!.isNotEmpty) {
                                 showDialog(
+                                  // ignore: use_build_context_synchronously
                                   context: context,
                                   builder: (BuildContext context) {
                                     return AlertDialog(

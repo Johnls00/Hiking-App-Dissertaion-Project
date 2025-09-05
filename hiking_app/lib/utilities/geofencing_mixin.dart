@@ -202,20 +202,6 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
     );
   }
 
-  /// Format elapsed time since trail start
-  // String _formatElapsedTime() {
-  //   if (_trailStartTime == null) return '0:00';
-
-  //   final elapsed = DateTime.now().difference(_trailStartTime!);
-  //   final hours = elapsed.inHours;
-  //   final minutes = elapsed.inMinutes % 60;
-
-  //   if (hours > 0) {
-  //     return '${hours}:${minutes.toString().padLeft(2, '0')}';
-  //   } else {
-  //     return '${minutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
-  //   }
-  // }
 
   /// Determine if user is currently on the trail
   bool _isUserOnTrail() {

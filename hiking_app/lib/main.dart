@@ -15,7 +15,7 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    print("⚠️ Warning: Could not load .env file: $e");
+    debugPrint("Warning: Could not load .env file: $e");
   }
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -25,15 +25,15 @@ void main() async {
   );
   cf.FirebaseFirestore.instance.enableNetwork(); // call once at startup
   final o = Firebase.app().options;
-  print('projectId=${o.projectId} appId=${o.appId} storage=${o.storageBucket}');
+  debugPrint('projectId=${o.projectId} appId=${o.appId} storage=${o.storageBucket}');
 
   // Setup Mapbox
   await setup();
-  runApp(const hikingApp());
+  runApp(const HikingApp());
 }
 
-class hikingApp extends StatelessWidget {
-  const hikingApp({super.key});
+class HikingApp extends StatelessWidget {
+  const HikingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class hikingApp extends StatelessWidget {
 Future<void> setup() async {
   final mapboxKey = Env.mapboxKey;
   if (mapboxKey.isEmpty) {
-    print("⚠️ Warning: MAPBOX_ACCESS_TOKEN not found in environment variables");
+    debugPrint("Warning: MAPBOX_ACCESS_TOKEN not found in environment variables");
     return;
   }
   MapboxOptions.setAccessToken(mapboxKey);

@@ -1,15 +1,30 @@
 import 'dart:math';
 import 'package:latlong2/latlong.dart';
 
-/// Represents a geofenced area around a hiking trail waypoint or point of interest
+/// Represents a geofenced area around a hiking trail trackpoint, point of interest or other area.
+///
+/// A [TrailGeofence] is defined by a unique [id], a [center] coordinate, and a [radius] in meters. The [type] determines the context
+/// (e.g., waypoint, checkpoint, trail start).
 class TrailGeofence {
+  /// Unique identifier for this geofence.
   final String id;
+
+  /// Display name of the geofence (e.g., "Summit", "Waterfall").
   final String name;
+
+  /// The central location (latitude/longitude) of the geofence.
   final LatLng center;
-  final double radius; // in meters
+
+  /// Radius of the geofence in meters.
+  final double radius;
+
+  /// Optional description of the geofence (e.g., notes for hikers).
   final String description;
+
+  /// The type of geofence (see [GeofenceType]).
   final GeofenceType type;
   
+  /// Creates a new [TrailGeofence].
   const TrailGeofence({
     required this.id,
     required this.name,
@@ -19,7 +34,10 @@ class TrailGeofence {
     this.type = GeofenceType.waypoint,
   });
 
-  /// Check if a given location is within this geofence
+  /// Returns `true` if the given [location] is inside the geofence.
+  ///
+  /// Uses the haversine formula to compute the distance from [center]
+  /// to [location], and checks if it is less than or equal to [radius].
   bool isLocationInside(LatLng location) {
     const double earthRadius = 6371000; // Earth's radius in meters
     
@@ -37,7 +55,9 @@ class TrailGeofence {
     return distance <= radius;
   }
 
-  /// Calculate distance from center to a given location
+  /// Calculates the distance in meters from [center] to the given [location].
+  ///
+  /// Uses the haversine formula to account for Earth’s curvature.
   double distanceToLocation(LatLng location) {
     const double earthRadius = 6371000; // Earth's radius in meters
     
@@ -54,7 +74,7 @@ class TrailGeofence {
     return earthRadius * c;
   }
 
-  /// Create from JSON
+  /// Creates a [TrailGeofence] instance from a JSON map.
   factory TrailGeofence.fromJson(Map<String, dynamic> json) {
     return TrailGeofence(
       id: json['id'],
@@ -69,7 +89,7 @@ class TrailGeofence {
     );
   }
 
-  /// Convert to JSON
+  /// Converts this [TrailGeofence] into a JSON map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -93,15 +113,26 @@ class TrailGeofence {
   int get hashCode => id.hashCode;
 }
 
-/// Types of geofences in the hiking app
+/// Types of geofences used in the hiking app.
 enum GeofenceType {
+  /// A waypoint marker (default type).
   waypoint,
+  /// A point of interest (e.g., scenic view, waterfall).
   pointOfInterest,
+  /// The starting point of a trail.
   trailStart,
+  /// The ending point of a trail.
   trailEnd,
+  /// A checkpoint or milestone along the trail.
   checkpoint,
+  /// A dangerous area hikers should be aware of.
   dangerZone,
+  /// A designated rest area.
   restArea,
-  trailArea,    // Large buffer around entire trail
-  corridor,     // Corridor segments along trail path
+  /// Large buffer around the entire trail.
+  /// Useful for detecting entry/exit to the overall trail area.
+  trailArea,
+  /// Corridor segments along the trail path.
+  /// Useful for precise trail-following detection.
+  corridor,
 }

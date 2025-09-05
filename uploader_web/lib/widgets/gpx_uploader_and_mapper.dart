@@ -55,6 +55,7 @@ class _GpxUploaderAndMapperState extends State<GpxUploaderAndMapper> {
   String? _difficulty;
   Uint8List? _trailImageBytes;
   String? _trailImageName;
+  
   Future<void> _pickTrailImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,

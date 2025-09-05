@@ -137,7 +137,7 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
     // focusing the map view to show the whole route line
     await cameraBoundsFromPoints(mapboxMapController, trailRoute!.trackpoints);
 
-    print(trailRoute!.waypoints[0].toString());
+    debugPrint(trailRoute!.waypoints[0].toString());
   }
 
   @override
