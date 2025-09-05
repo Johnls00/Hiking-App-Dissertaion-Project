@@ -66,7 +66,6 @@ class TrailRecorder {
         ? gl.AndroidSettings(
             accuracy: gl.LocationAccuracy.best,
             distanceFilter: distanceFilterMeters,
-            // intervalDuration: const Duration(seconds: 1),  // optional
             timeLimit: const Duration(seconds: 1),
             forceLocationManager: true,
             foregroundNotificationConfig: const gl.ForegroundNotificationConfig(

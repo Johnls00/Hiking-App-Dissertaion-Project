@@ -189,6 +189,7 @@ class _TrailWaypointsScreenState extends State<TrailWaypointsScreen> {
                 ],
               ),
 
+              // Need to add images to waypoints and update this to show them
               // Padding(
               //   padding: const EdgeInsets.all(8.0),
               //   child: ClipRRect(

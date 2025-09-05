@@ -110,6 +110,8 @@ class TrailGeofenceService extends ChangeNotifier {
       throw Exception('Location permissions are permanently denied');
     }
 
+    // this can probably be taken out and refactored as the location latency has been fixed now 
+    // all location handling should be linked to the user location tracker service instead
     // Use optimized location settings for faster updates
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -130,7 +132,6 @@ class TrailGeofenceService extends ChangeNotifier {
 
     _isMonitoring = true;
     notifyListeners();
-    debugPrint('Started geofence monitoring with fast updates');
   }
 
   /// Check if current location is within any geofences
@@ -256,20 +257,6 @@ class TrailGeofenceService extends ChangeNotifier {
     return _geofences.where((g) => _activeGeofences.contains(g.id)).toList();
   }
 
-  /// Simulate a geofence event for testing
-  void simulateGeofenceEvent(GeofenceEvent event) {
-    _eventController.add(event);
-
-    if (event.eventType == GeofenceEventType.enter) {
-      if (!_activeGeofences.contains(event.geofence.id)) {
-        _activeGeofences.add(event.geofence.id);
-      }
-    } else {
-      _activeGeofences.remove(event.geofence.id);
-    }
-
-    notifyListeners();
-  }
 
   @override
   void dispose() {

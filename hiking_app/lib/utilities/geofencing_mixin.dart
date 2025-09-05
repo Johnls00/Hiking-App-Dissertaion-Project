@@ -19,7 +19,7 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
   // Optimized settings for faster response
   final double defaultRadius = 15.0; // Slightly smaller for quicker entry/exit
   final double defaultIntervalDistance = 25.0; // Closer geofences for better coverage
-  final double minStartEndDistance = 80.0; // Reduced distance threshold
+  final double minStartEndDistance = 50.0; // Reduced distance threshold
   final Duration minTrailTime = Duration(seconds: 30); // Faster minimum time
 
   // Trail progress tracking
@@ -431,8 +431,6 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
           if (mounted) setState(() {});
         });
         
-        // Optional: Show status change notification
-        // _showTrailStatusChangeNotification(_isCurrentlyOnTrail);
       }
     }
   }
@@ -645,6 +643,15 @@ mixin GeofencingMixin<T extends StatefulWidget> on State<T> {
 
   /// Called when hiker completes the trail
   void _onTrailCompleted() {
+    if (!_trailStarted) {
+      debugPrint('Trail completion ignored - trail not started yet');
+      return;
+    }
+
+    // need to add check that if the users has end so no double completion dialog is shown 
+    // also need to add a way to save the trails the user has completed.
+
+
     debugPrint('Trail completed!');
     _showTrailCompletionDialog();
   }

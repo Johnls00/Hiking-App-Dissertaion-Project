@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gpx/gpx.dart';
 
+
+/// Repository utility to fetch trails and their GPX data from Firestore and Storage
 class TrailsRepository {
   Future<List<Map<String, dynamic>>> fetchAllTrails() async {
     try {
@@ -77,7 +79,7 @@ class TrailsRepository {
       debugPrint("Storage reference created, starting download...");
 
     
-      // 3) Download bytes with shorter timeout and progress tracking
+      // 3) Download bytes with timeout
       final bytes = await ref.getData()
           .timeout(Duration(seconds: 15), onTimeout: () {
             debugPrint("GPX download timed out for $trailGpxUrl");
@@ -122,6 +124,8 @@ class TrailsRepository {
     }
     throw Exception('All retry attempts failed');
   }
+
+  // Fetch all image URLs for a trail
 Future<List<String>> fetchTrailImageUrls(String trailId) async {
   // Use the correct default database id
   final fs = FirebaseFirestore.instanceFor(

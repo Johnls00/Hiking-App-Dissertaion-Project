@@ -11,7 +11,6 @@ import 'package:hiking_app/models/trail.dart';
 
 
 class GpxFileUtil {
-  // ====== IO ======
   static Future<Gpx> readGpxAsset(String assetPath) async {
     final xml = await rootBundle.loadString(assetPath);
     return GpxReader().fromString(xml);
@@ -23,7 +22,7 @@ class GpxFileUtil {
   }
 
 
-    /// Build a GPX XML string from a list of recorded Trackpoints.
+  /// Build a GPX XML string from a list of recorded Trackpoints.
   ///
   /// [name] becomes the GPX track name and [creator] is written in the GPX header.
 static String gpxFromTrackpoints(
@@ -134,54 +133,54 @@ static String gpxFromTrackpoints(
     );
   }
 
-  // Legacy methods for backward compatibility
-  static Duration calculateWalkingDuration(double distanceKm, double speedKmh) {
-    final hours = distanceKm / speedKmh;
-    return Duration(minutes: (hours * 60).round());
-  }
+  // // Legacy methods 
+  // static Duration calculateWalkingDuration(double distanceKm, double speedKmh) {
+  //   final hours = distanceKm / speedKmh;
+  //   return Duration(minutes: (hours * 60).round());
+  // }
 
-  // Legacy mapWaypoints that returns List<Map<String, dynamic>>
-  static List<Map<String, dynamic>> mapWaypoints(Gpx gpxFile) {
-    return gpxFile.wpts.map((wpt) => {
-      'name': wpt.name ?? 'Waypoint',
-      'description': wpt.desc ?? '',
-      'lat': wpt.lat ?? 0.0,
-      'lon': wpt.lon ?? 0.0,
-      'ele': wpt.ele ?? 0.0,
-    }).toList();
-  }
+  // // Legacy mapWaypoints that returns List<Map<String, dynamic>>
+  // static List<Map<String, dynamic>> mapWaypoints(Gpx gpxFile) {
+  //   return gpxFile.wpts.map((wpt) => {
+  //     'name': wpt.name ?? 'Waypoint',
+  //     'description': wpt.desc ?? '',
+  //     'lat': wpt.lat ?? 0.0,
+  //     'lon': wpt.lon ?? 0.0,
+  //     'ele': wpt.ele ?? 0.0,
+  //   }).toList();
+  // }
 
-  // Legacy mapTrackpoints that returns List<Map<String, dynamic>>
-  static List<Map<String, dynamic>> mapTrackpoints(Gpx gpxFile) {
-    final trackpoints = <Map<String, dynamic>>[];
-    for (final trk in gpxFile.trks) {
-      for (final seg in trk.trksegs) {
-        for (final p in seg.trkpts) {
-          final lon = p.lon, lat = p.lat;
-          if (lon != null && lat != null) {
-            trackpoints.add({
-              'lat': lat,
-              'lon': lon,
-              'ele': p.ele ?? 0.0,
-            });
-          }
-        }
-      }
-    }
-    return trackpoints;
-  }
+  // // Legacy mapTrackpoints that returns List<Map<String, dynamic>>
+  // static List<Map<String, dynamic>> mapTrackpoints(Gpx gpxFile) {
+  //   final trackpoints = <Map<String, dynamic>>[];
+  //   for (final trk in gpxFile.trks) {
+  //     for (final seg in trk.trksegs) {
+  //       for (final p in seg.trkpts) {
+  //         final lon = p.lon, lat = p.lat;
+  //         if (lon != null && lat != null) {
+  //           trackpoints.add({
+  //             'lat': lat,
+  //             'lon': lon,
+  //             'ele': p.ele ?? 0.0,
+  //           });
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return trackpoints;
+  // }
 
-  // Legacy calculateTotalDistance that returns kilometers
-  static double calculateTotalDistance(Gpx gpxFile) {
-    return calculateTotalDistanceMeters(gpxFile) / 1000.0;
-  }
+  // // Legacy calculateTotalDistance that returns kilometers
+  // static double calculateTotalDistance(Gpx gpxFile) {
+  //   return calculateTotalDistanceMeters(gpxFile) / 1000.0;
+  // }
 
-  // Legacy calculateElevationGain 
-  static double calculateElevationGain(Gpx gpxFile) {
-    return calculateElevationGainMeters(gpxFile);
-  }
+  // // Legacy calculateElevationGain 
+  // static double calculateElevationGain(Gpx gpxFile) {
+  //   return calculateElevationGainMeters(gpxFile);
+  // }
 
-  // ====== Mapping (New methods) ======
+  // ====== Mapping  ======
   static List<Point> mapTrackpointsAsPoints(Gpx gpxFile) {
     final mapped = <Point>[];
     for (final trk in gpxFile.trks) {
@@ -240,7 +239,7 @@ static String gpxFromTrackpoints(
     return mapped;
   }
 
-  // ====== Distance & Elevation (Renamed methods) ======
+  // ====== Distance & Elevation ======
 
   /// 3D distance (planar + elevation) - returns meters.
   static double calculateTotalDistanceMeters(
@@ -321,7 +320,8 @@ static String gpxFromTrackpoints(
   }
 
   // ====== Waypoint distance from start (snap to track) ======
-
+  // Based on the “project point onto segment/polyline” approach discussed on Stack Overflow
+  // (see https://stackoverflow.com/a/56528203). Adapted for this project to calculate distance along trails.
   /// Returns distance-from-start to the nearest point on the polyline.
   static _SnapResult _snapToTrack(
     double wLat,
@@ -370,7 +370,7 @@ static String gpxFromTrackpoints(
   /// Project point W onto segment AB in geographic space (approx: use meters in local tangent).
   /// Returns fraction t in [0,1] and perpendicular distance in meters.
   static _Projection _projectToSegment(double wLat, double wLon, Wpt a, Wpt b) {
-    // Convert to a local flat approximation using meters (good enough for short segments)
+    // Convert to a local flat approximation using meters 
     // Use the first endpoint as origin.
     final ax = 0.0;
     final ay = 0.0;
@@ -407,7 +407,7 @@ static String gpxFromTrackpoints(
 }
 
 class _Projection {
-  final double t; // 0..1 along the segment
+  final double t;
   final double perpMeters;
   _Projection({required this.t, required this.perpMeters});
 }

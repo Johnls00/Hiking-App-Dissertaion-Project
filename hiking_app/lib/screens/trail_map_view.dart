@@ -20,7 +20,7 @@ class TrailMapViewScreen extends StatefulWidget {
 class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     with GeofencingMixin {
   StreamSubscription<geo.Position>?
-  _userPositionStream; // <-- outside the class
+  _userPositionStream; 
   Trail? _trailRoute;
   late MapboxMap mapboxMapController;
   CircleAnnotationManager? circleAnnotationManager;
@@ -49,7 +49,6 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     _isExiting = true;
     _userPositionStream?.cancel();
     _elapsedTimer?.cancel();
-    // GeofencingMixin also disposes, but call directly for safety
     stopGeofencing().catchError((_) {});
     circleAnnotationManager = null;
     super.dispose();
@@ -74,7 +73,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
       ),
     );
 
-    // Setup position tracking and geofencing with a small delay
+    // Setup position tracking and geofencing with a small delay to ensure map is ready
     await Future.delayed(const Duration(milliseconds: 200));
     await setupPositionTracking(
       mapboxMapController,
@@ -90,7 +89,6 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
 
   Future<void> _addWaypointMarkers() async {
     try {
-      // Don't call deleteAll() - just create a new manager
       circleAnnotationManager = await mapboxMapController.annotations
           .createCircleAnnotationManager();
 
@@ -115,9 +113,9 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
         await circleAnnotationManager!.create(circleAnnotationOptions);
       }
 
-      debugPrint('✅ Added ${_trailRoute!.waypoints.length} waypoint markers');
+      debugPrint('Added ${_trailRoute!.waypoints.length} waypoint markers');
     } catch (e) {
-      debugPrint('❌ Error adding waypoint markers: $e');
+      debugPrint('Error adding waypoint markers: $e');
       // Fallback: set manager to null if it failed
       circleAnnotationManager = null;
     }
@@ -129,7 +127,7 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     // Setup geofencing for the trail using mixin
     await setupTrailGeofencing(_trailRoute!, mapboxMapController);
 
-    // Convert trackpoints to LatLng for later use in navigation
+    // Convert trackpoints to LatLng for use in navigation
     geofenceTrailPoints = _trailRoute!.trackpoints
         .map(
           (e) => LatLng(
@@ -157,25 +155,10 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
       }
     });
 
-    // geofenceTrailPoints is already set in _onMapCreated
 
     _lastMovementTime = DateTime.now();
     _inactivityAlerted = false;
 
-    // Safety check: ensure geofenceTrailPoints is populated
-    if (geofenceTrailPoints.isEmpty) {
-      debugPrint(
-        '⚠️ geofenceTrailPoints is empty, populating from trackpoints',
-      );
-      geofenceTrailPoints = _trailRoute!.trackpoints
-          .map(
-            (e) => LatLng(
-              e.coordinates.lat.toDouble(),
-              e.coordinates.lng.toDouble(),
-            ),
-          )
-          .toList();
-    }
 
     // Get initial user position for stats
     final geo.Position pos = await geo.Geolocator.getCurrentPosition();
@@ -214,12 +197,6 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
           _currentPace = (_currentSpeed > 0) ? (1000 / _currentSpeed) / 60 : 0;
           _currentElevation = position.altitude;
 
-          // Force UI update immediately
-          // if (mounted) {
-          //   setState(() {
-          //     // Trigger immediate rebuild
-          //   });
-          // }
 
           // Update geofencing progress with current location
           updateProgressFromLocation(userLocation);
@@ -274,9 +251,6 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
           enabled: false,
           pulsingEnabled: false,
           puckBearingEnabled: false,
-          // If you used follow-puck parameters, also null/disable them:
-          // puckBearing: null,
-          // puckBearingSource: null,
         ),
       );
     } catch (_) {}
@@ -289,7 +263,6 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
     _userPositionStream?.cancel();
     _elapsedTimer?.cancel();
 
-    // Stop geofence monitoring (handled by mixin) - do this asynchronously to avoid blocking
     if (mounted) {
       stopGeofencing().catchError((error) {
         debugPrint('Error stopping geofencing: $error');
@@ -305,13 +278,12 @@ class _TrailMapViewScreenState extends State<TrailMapViewScreen>
       _currentElevation = 0;
       _startTime = null;
       _lastPosition = null;
-      // Removed _currentPointIndex reset - no longer using point-to-point navigation
+
     });
 
-    debugPrint('🛑 Stopped trail navigation and geofence monitoring');
+    debugPrint('Stopped trail navigation and geofence monitoring');
   }
 
-  // Removed _onReachedTrailPoint - geofencing events are now handled by GeofencingMixin
 
   Widget _buildTrailOverview() {
     return Column(

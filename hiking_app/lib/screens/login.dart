@@ -164,8 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       minWidth: double.infinity,
                       onPressed: () async {
                         Navigator.pushReplacementNamed(context, '/register');
-                        // await createUserWithEmailAndPassword();
-                        // if (!mounted) return;
                         if (_errorMessage != null && _errorMessage!.isNotEmpty) {
                           showDialog(
                             context: context,

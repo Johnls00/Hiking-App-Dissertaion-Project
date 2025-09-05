@@ -38,13 +38,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadUserProfile() async {
     try {
       // Debug the user profile state
-      await UserProfileManager.debugUserProfile();
+      // await UserProfileManager.debugUserProfile();
 
       User? user = await UserProfileManager.loadUserProfile();
 
       debugPrint('Loaded user profile: ${user?.toJson()}');
 
-      // Only create a default user if NO profile exists at all
+      // create a default user if noprofile exists
       if (user == null) {
         final hasProfile = await UserProfileManager.hasUserProfile();
         if (!hasProfile) {
@@ -435,6 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+//  widgets below could be simplified by putting into a widget file 
   Widget _buildTrailListItem(SavedTrail trail, bool isFavorited) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

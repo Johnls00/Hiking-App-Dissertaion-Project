@@ -28,11 +28,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   double _totalDistance = 0;
   double _currentSpeed = 0;
   double _currentElevation = 0;
-  // DateTime? _startTime;
-  // LatLng? _lastPosition;
-  // Timer? _elapsedTimer;
 
-  // List<Trackpoint> _recordedPath = [];
   final List<Point> _userTrailPointsLine = [];
 
   StreamSubscription<RecordingStats>? _statsSub;
@@ -96,7 +92,7 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
     });
 
     await _recorder.start();
-    debugPrint('🔴 Started trail recording');
+    debugPrint('Started trail recording');
   }
 
   Future<void> _stopRecording() async {
@@ -106,8 +102,8 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
       _isRecording = false;
     });
 
-    debugPrint('🛑 Stopped trail recording');
-    debugPrint('📊 Recorded ${_recorder.recordedTrack.length} points');
+    debugPrint('Stopped trail recording');
+    debugPrint('Recorded ${_recorder.recordedTrack.length} points');
 
     // Navigate to save screen instead of automatically saving
     if (mounted && _recorder.recordedTrack.isNotEmpty) {
@@ -161,22 +157,6 @@ class _TrailRecordingScreenState extends State<TrailRecordingScreen> {
   Widget _buildRecordingStats() {
     return Column(
       children: [
-        // Row(
-        //   mainAxisAlignment: MainAxisAlignment.center,
-        //   children: [
-        //     Icon(Icons.fiber_manual_record, color: Colors.red, size: 16),
-        //     SizedBox(width: 8),
-        //     Text(
-        //       'Recording in progress',
-        //       style: TextStyle(
-        //         fontSize: 16,
-        //         fontWeight: FontWeight.w500,
-        //         color: Colors.red,
-        //       ),
-        //     ),
-        //   ],
-        // ),
-        // SizedBox(height: 15),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [

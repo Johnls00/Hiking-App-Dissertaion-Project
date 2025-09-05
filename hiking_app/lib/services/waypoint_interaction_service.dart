@@ -45,9 +45,9 @@ class WaypointInteractionService {
         const JsonEncoder.withIndent('  ').convert(interactions),
       );
       
-      debugPrint('✅ Waypoint interaction saved successfully');
+      debugPrint('Waypoint interaction saved successfully - to ${interactionsFile.path}');
     } catch (e) {
-      debugPrint('❌ Error saving waypoint interaction: $e');
+      debugPrint('Error saving waypoint interaction: $e');
       rethrow;
     }
   }
@@ -84,7 +84,7 @@ class WaypointInteractionService {
           .map((json) => WaypointInteraction.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('❌ Error loading waypoint interactions: $e');
+      debugPrint('Error loading waypoint interactions: $e');
       return [];
     }
   }
@@ -141,9 +141,9 @@ class WaypointInteractionService {
         ),
       );
 
-      debugPrint('✅ Waypoint interaction deleted successfully');
+      debugPrint('Waypoint interaction deleted successfully');
     } catch (e) {
-      debugPrint('❌ Error deleting waypoint interaction: $e');
+      debugPrint('Error deleting waypoint interaction: $e');
       rethrow;
     }
   }
@@ -162,9 +162,9 @@ class WaypointInteractionService {
         await interactionsDir.delete(recursive: true);
       }
 
-      debugPrint('✅ Trail interactions cleared successfully');
+      debugPrint('Trail interactions cleared successfully');
     } catch (e) {
-      debugPrint('❌ Error clearing trail interactions: $e');
+      debugPrint(' Error clearing trail interactions: $e');
       rethrow;
     }
   }

@@ -122,7 +122,7 @@ class _WaypointInteractionDialogState extends State<WaypointInteractionDialog> {
         lon: widget.waypoint.lon,
       );
 
-      // Call the callback to save interaction
+      // Save interaction
       widget.onInteractionSaved(interaction);
 
       if (mounted) {

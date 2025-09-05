@@ -28,9 +28,9 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
   @override
   void initState() {
     super.initState();
-    // _loadImageUrl will be called in didChangeDependencies after trailRoute is set
   }
 
+  // trail data is initialised here instead of initState to ensure context is available - this will only run when the widgets are built
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -60,7 +60,7 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
           });
         }
       } catch (e) {
-        debugPrint("❌ Error loading image for ${trailRoute?.name}: $e");
+        debugPrint("Error loading image for ${trailRoute?.name}: $e");
         if (mounted) {
           setState(() {
             imageUrl = null;
@@ -529,7 +529,7 @@ class _TrailViewScreenState extends State<TrailViewScreen> {
         ),
         errorWidget: (context, url, error) {
           debugPrint(
-            "❌ CachedNetworkImage error for ${trailRoute!.name}: $error",
+            "CachedNetworkImage error for ${trailRoute!.name}: $error",
           );
           return Container(
             height: 150,

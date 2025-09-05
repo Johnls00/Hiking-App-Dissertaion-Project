@@ -49,6 +49,7 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
 
       final loadedTrails = <Trail>[];
 
+      // Process each document creating a trail object and adding to the loadedTrails list
       for (var doc in query.docs) {
         final data = doc.data();
         
@@ -113,10 +114,10 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
           );
 
           loadedTrails.add(trail);
-          debugPrint("✅ Successfully created trail: ${trail.name}");
+          debugPrint("Successfully created trail: ${trail.name}");
         } catch (e) {
-          debugPrint("❌ Error creating trail for doc ${doc.id}: $e");
-          debugPrint("📋 Data was: $data");
+          debugPrint("Error creating trail for doc ${doc.id}: $e");
+          debugPrint("Data was: $data");
         }
       }
 
@@ -215,7 +216,7 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
     //     isLoading = false;
     //   });
     // } catch (e) {
-    //   debugPrint("❌ Error loading trails: $e");
+    //   debugPrint("Error loading trails: $e");
     //   if (!mounted) return;
     //   setState(() {
     //     errorMessage = "Failed to load trails. Please try again.";
@@ -302,11 +303,11 @@ class _TrailBrowserScreenState extends State<TrailBrowserScreen> {
               // Trail cards with loading states
               if (isLoading && errorMessage == null)
                 const Padding(
-                  padding: EdgeInsets.all(20.0),
+                  padding: EdgeInsets.all(50.0),
                   child: Center(child: CircularProgressIndicator()),
                 )
               else if (!isLoading && errorMessage == null) ...[
-                // Display trails from server
+                // Display trails from server - creates a card for each trail
                 ...trails.map((trail) => TrailCard(trailRoute: trail)),
               ],
             ],

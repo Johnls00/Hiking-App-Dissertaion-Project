@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+// saved trails need to be moved into thier own model file and the logic for them should only be stored here
+// saved trails will also be saved to firebase instead of local storage
 class SavedTrail {
   final String id;
   final String name;

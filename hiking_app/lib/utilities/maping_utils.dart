@@ -41,6 +41,8 @@ Future<void> addTrailLine(
   }
 }
 
+// Helper to add directions line layer
+// hasnt been used yet but would be used to direct the user to the start of the trail if driving to the trail head
 Future<void> addDirectionsLine(
   MapboxMap mapboxMapController,
   List<Point> trailPoints,
@@ -430,9 +432,9 @@ Future<void> addTrailCorridorGeofences(
       );
     }
 
-    debugPrint('✅ Added ${corridorGeofences.length} corridor geofences to map');
+    debugPrint('Added ${corridorGeofences.length} corridor geofences to map');
   } catch (e) {
-    debugPrint("❌ Error adding corridor geofences: $e");
+    debugPrint("Error adding corridor geofences: $e");
   }
 }
 

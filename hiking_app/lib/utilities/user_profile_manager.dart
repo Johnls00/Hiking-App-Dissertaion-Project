@@ -248,31 +248,4 @@ class UserProfileManager {
     }
   }
 
-  /// Debug method to check user profile status
-  static Future<void> debugUserProfile() async {
-    try {
-      final file = await _userProfileFile;
-      debugPrint('=== USER PROFILE DEBUG ===');
-      debugPrint('File path: ${file.path}');
-      debugPrint('File exists: ${await file.exists()}');
-      
-      if (await file.exists()) {
-        final contents = await file.readAsString();
-        debugPrint('File size: ${contents.length} characters');
-        debugPrint('File contents preview: ${contents.substring(0, contents.length > 100 ? 100 : contents.length)}...');
-      }
-      
-      final user = await loadUserProfile();
-      if (user != null) {
-        debugPrint('User loaded successfully: ${user.name}');
-        debugPrint('User stats: ${user.stats.totalTrailsRecorded} trails, ${user.stats.totalDistanceKm} km');
-        debugPrint('Favorites: ${user.favoriteTrailIds.length} items');
-      } else {
-        debugPrint('User is null');
-      }
-      debugPrint('=== END DEBUG ===');
-    } catch (e) {
-      debugPrint('Debug error: $e');
-    }
-  }
 }

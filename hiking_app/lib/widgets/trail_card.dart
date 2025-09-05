@@ -36,7 +36,7 @@ class _TrailCardState extends State<TrailCard> {
           });
         }
       } catch (e) {
-        debugPrint("❌ Error loading image for ${widget.trailRoute.name}: $e");
+        debugPrint("Error loading image for ${widget.trailRoute.name}: $e");
         if (mounted) {
           setState(() {
             imageUrl = null;
@@ -148,7 +148,7 @@ class _TrailCardState extends State<TrailCard> {
           child: const Center(child: CircularProgressIndicator()),
         ),
         errorWidget: (context, url, error) {
-          debugPrint("❌ CachedNetworkImage error for ${widget.trailRoute.name}: $error");
+          debugPrint("CachedNetworkImage error for ${widget.trailRoute.name}: $error");
           return Container(
             height: 150,
             color: Colors.grey[300],

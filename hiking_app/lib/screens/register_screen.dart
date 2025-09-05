@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:hiking_app/widgets/round_back_button.dart';
+// import 'package:hiking_app/widgets/round_back_button.dart';
 import 'package:hiking_app/auth.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -42,8 +42,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             children: [
               // Back button
-              const RoundBackButton(),
-              
+              // const RoundBackButton(),
+              SizedBox(height: 50,),
+
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
